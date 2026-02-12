@@ -34,7 +34,7 @@ export default function Footer() {
                     <div className="flex flex-col items-center md:items-end space-y-3 text-right">
                         <div className="text-sm text-gray-700">
                             <span className="font-bold text-gray-900 block mb-0.5">Team</span>
-                            Diyanth K • Hari Vishnu KC • Mohanakumaran
+                            Diyanth K • Mohanakumaran • Hari Vishnu KC  
                         </div>
                         <div className="text-sm text-gray-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
                             <span className="font-bold text-indigo-900 mr-2">Mentored by</span>
