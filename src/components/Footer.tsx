@@ -23,7 +23,7 @@ export default function Footer() {
                             </a>
                         </p>
                         <p className="text-xs text-gray-500">
-                            Crafted with <Heart className="w-3 h-3 text-red-500 inline fill-red-500" /> for efficient academic assessment.
+                            Crafted with care for efficient academic assessment.
                         </p>
                         <p className="text-[10px] text-gray-400 italic">
                             Start an issue on GitHub if any bug is found.
