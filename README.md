@@ -1,37 +1,152 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+**CO Marks Automation System – Next.js**
 
-## Getting Started
+A Comprehensive Course Outcome (CO) Attainment Automation System designed to replace manual Excel-based Internal assessment calculations with a dynamic, web-based solution.
 
-First, run the development server:
+This project focuses on automated CO computation, flexible question-to-CO mapping, part-wise breakdown analysis, performance visualization, and structured Excel report generation — all deployed as a single application on Vercel.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+⸻
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Project Overview
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Designed a real-world Internal Assessment CO Management System with the following highlights:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+• Supports both Manual Entry Mode and Upload & Auto-Analyze Mode
+• Allows dynamic configuration of Maximum Marks and CO Mapping per Question
+• Automatically computes CO-wise totals, percentages, and part-wise analysis
+• Generates structured “INT TOTAL” style reports used in academic institutions
+• Provides performance visualization using interactive charts
+• Exports fully formatted Excel reports with conditional highlighting
+• Deployed as a single unified application on Vercel (no external backend hosting)
 
-## Learn More
+⸻
 
-To learn more about Next.js, take a look at the following resources:
+System Design
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The application is structured into two primary operational modes:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1️⃣ Manual Entry Mode
 
-## Deploy on Vercel
+• Faculty defines Academic Year and Test Type (Internal 1 / 2 / 3)
+• Configure maximum marks per question
+• Assign CO1–CO6 dynamically for each question
+• Enter student marks in a spreadsheet-style interface
+• Automatic validation and instant recalculation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2️⃣ Upload & Auto-Analyze Mode
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# college_mark_automation
+• Upload Excel template (.xlsx)
+• Automatically detects:
+• Question columns
+• Maximum marks row
+• CO mapping row
+• Student data
+• Generates complete CO summary instantly
+• Applies automatic performance-based highlighting
+• Exports analyzed results in formatted Excel
+
+⸻
+
+Calculation Logic
+CO Attainment Value
+
+CO_Value = Sum of marks obtained in all questions mapped to that CO
+
+CO Attainment Percentage
+
+CO% = (CO_Value / CO_Max_Marks) × 100
+
+• If CO_Max_Marks = 0 → percentage displayed as “-” (no divide-by-zero errors)
+
+Part-Wise Breakdown
+
+• Part A → Q1–Q10
+• Part B (a) → Q11a–Q16a
+• Part B (b) → Q11b–Q16b
+
+Average %
+
+AVG% = Average of available CO% values (excluding COs with 0 max)
+
+Total Examination Marks = 180 (default configuration)
+
+⸻
+
+Performance Highlighting
+
+The system automatically applies visual indicators:
+
+• 🟢 ≥ 60% → Good Attainment
+• 🟡 40%–59% → Moderate Attainment
+• 🔴 < 40% → Needs Improvement
+• ⚪ CO with 0 maximum → Not Applicable
+
+Highlights are applied both in the web interface and exported Excel reports.
+
+⸻
+
+Visualization Dashboard
+
+Interactive charts provide academic insights:
+
+• CO-wise class average percentage
+• Student total marks distribution
+• CO percentage breakdown per student
+
+Designed for clarity and academic reporting.
+
+⸻
+
+Excel Export System
+
+• Generates formatted .xlsx reports
+• Includes metadata (Academic Year, Test Type)
+• Displays:
+• Part-wise CO totals
+• Total CO maximum
+• Student-wise CO values and percentages
+• Conditional formatting applied inside Excel
+• Implemented using Next.js Serverless API route
+
+⸻
+
+Technical Architecture
+
+• Framework – Next.js (App Router)
+• Styling – Tailwind CSS
+• State Management – React Context / Local State
+• Excel Parsing – xlsx
+• Excel Export – exceljs
+• Charts – Recharts / Chart.js
+• Animations – Framer Motion
+• Deployment – Vercel (Single Deployment)
+
+All data remains client-side with optional localStorage safety. No backend database is used.
+
+⸻
+
+Key Modules
+
+• Academic Setup & Metadata
+• Question Configuration & CO Mapping
+• Student Marks Entry Grid
+• CO Calculation Engine
+• Upload Analyzer & Parser
+• Visualization Dashboard
+• Excel Export Engine
+
+⸻
+
+Key Learnings
+
+• Dynamic CO mapping and academic evaluation logic
+• Designing scalable calculation engines for structured reporting
+• Excel parsing and generation in serverless environments
+• Performance visualization for academic analytics
+• Single-deployment architecture using Next.js and Vercel
+
+⸻
+
+Author
+
+Mohamed Arshad M
+Engineering Student | Data & Systems Enthusiast
