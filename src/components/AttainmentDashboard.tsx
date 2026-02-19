@@ -32,7 +32,14 @@ const TEST_TYPES: TestType[] = ["Internal 1", "Internal 2", "Semester", "Unit Te
 const LEVEL_COLORS = ["bg-red-100 text-red-700", "bg-orange-100 text-orange-700", "bg-yellow-100 text-yellow-700", "bg-emerald-100 text-emerald-700"];
 const LEVEL_LABELS = ["L0", "L1", "L2", "L3"];
 
-function LevelBadge({ level }: { level: number }) {
+function LevelBadge({ level }: { level: number | "N/A" }) {
+    if (level === "N/A") {
+        return (
+            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-400">
+                N/A
+            </span>
+        );
+    }
     const l = Math.min(Math.max(Math.round(level), 0), 3);
     return (
         <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold ${LEVEL_COLORS[l]}`}>

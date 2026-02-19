@@ -1,3 +1,5 @@
+import type { ComputedAssessment } from "@/lib/attainmentEngine";
+
 export interface Student {
   id: string;
   slNo: number;
@@ -75,8 +77,10 @@ export interface AssessmentDoc {
   examConfig: ExamConfig;
   questionConfig: QuestionConfig;
   students: Student[];
-  coAttainment: COScores;     // attainment level 0-3 per CO
-  coPercentage: COScores;     // raw % per CO
+  computed: ComputedAssessment; // full CO stats: coMax, studentCO, attainment
+  // Legacy fields kept for backward compat
+  coAttainment?: COScores;
+  coPercentage?: COScores;
   isActive: boolean;
   savedAt: string;            // ISO string
 }
@@ -86,9 +90,9 @@ export interface AttainmentResult {
   subjectId: string;
   internalAttainment: COScores;
   directAttainment: COScores;
-  indirectAttainment: COScores;   // entered manually
+  indirectAttainment: COScores;
   finalAttainment: COScores;
-  levels: COScores;
+  levels: Record<COLabel, number | "N/A">;
   computedAt: string;
 }
 
