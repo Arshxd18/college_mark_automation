@@ -4,7 +4,16 @@ import React from "react";
 import { ExamConfig, QuestionConfig, COLabel } from "@/types";
 import { QUESTION_ORDER } from "@/lib/constants";
 import { ChevronDown, ChevronUp, Settings } from "lucide-react";
-import { cn } from "@/lib/utils";
+
+const CO_OPTIONS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
+
+const TEST_TYPES = [
+    "Internal 1",
+    "Internal 2",
+    "Semester",
+    "Unit Test",
+    "Assignment",
+] as const;
 
 interface SetupSectionProps {
     examConfig: ExamConfig;
@@ -16,8 +25,6 @@ interface SetupSectionProps {
     onReset: () => void;
 }
 
-const CO_OPTIONS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
-
 export default function SetupSection({
     examConfig,
     setExamConfig,
@@ -25,7 +32,7 @@ export default function SetupSection({
     setQuestionConfig,
     isOpen,
     onToggle,
-    onReset
+    onReset,
 }: SetupSectionProps) {
 
     const handleQuestionConfigChange = (qId: string, field: "co" | "maxMark", value: any) => {
@@ -61,6 +68,7 @@ export default function SetupSection({
 
                     {/* Exam Configuration */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {/* Academic Year */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
                             <input
@@ -71,6 +79,32 @@ export default function SetupSection({
                                 placeholder="2025-2026"
                             />
                         </div>
+
+                        {/* Batch Year */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Batch Year</label>
+                            <input
+                                type="text"
+                                value={examConfig.batchYear}
+                                onChange={(e) => setExamConfig({ ...examConfig, batchYear: e.target.value })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="2023-2027"
+                            />
+                        </div>
+
+                        {/* Subject ID */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Subject ID</label>
+                            <input
+                                type="text"
+                                value={examConfig.subjectId}
+                                onChange={(e) => setExamConfig({ ...examConfig, subjectId: e.target.value })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="e.g. 23AD1501"
+                            />
+                        </div>
+
+                        {/* Test Type */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Test Type</label>
                             <select
@@ -78,30 +112,10 @@ export default function SetupSection({
                                 onChange={(e) => setExamConfig({ ...examConfig, testType: e.target.value as any })}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                             >
-                                <option value="Internal 1">Internal 1</option>
-                                <option value="Internal 2">Internal 2</option>
-                                <option value="Internal 3">Internal 3</option>
+                                {TEST_TYPES.map((t) => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
                             </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Subject Name (Optional)</label>
-                            <input
-                                type="text"
-                                value={examConfig.subjectName || ""}
-                                onChange={(e) => setExamConfig({ ...examConfig, subjectName: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                placeholder="e.g. Data Structures"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Subject Code (Optional)</label>
-                            <input
-                                type="text"
-                                value={examConfig.subjectCode || ""}
-                                onChange={(e) => setExamConfig({ ...examConfig, subjectCode: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                placeholder="e.g. CS101"
-                            />
                         </div>
                     </div>
 
@@ -122,7 +136,7 @@ export default function SetupSection({
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {QUESTION_ORDER.map((qId) => (
                                 <div key={qId} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div className="w-12 text-center font-bold text-gray-700 uppercase disable-select">
+                                    <div className="w-12 text-center font-bold text-gray-700 uppercase">
                                         {qId}
                                     </div>
                                     <div className="flex-1 space-y-2">

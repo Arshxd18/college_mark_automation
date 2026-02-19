@@ -17,11 +17,18 @@ export type QuestionId =
 
 export type COLabel = "co1" | "co2" | "co3" | "co4" | "co5" | "co6";
 
+export type TestType =
+  | "Internal 1"
+  | "Internal 2"
+  | "Semester"
+  | "Unit Test"
+  | "Assignment";
+
 export interface ExamConfig {
   academicYear: string;
-  testType: "Internal 1" | "Internal 2" | "Internal 3";
-  subjectName?: string;
-  subjectCode?: string;
+  batchYear: string;       // e.g. "2023-2027"
+  subjectId: string;       // e.g. "23AD1501"
+  testType: TestType;
 }
 
 export interface QuestionConfig {
@@ -47,6 +54,42 @@ export interface COResult {
     co5: number;
     co6: number;
   };
+}
+
+export interface COScores {
+  co1: number;
+  co2: number;
+  co3: number;
+  co4: number;
+  co5: number;
+  co6: number;
+}
+
+// --- Firestore Interfaces ---
+
+export interface AssessmentDoc {
+  id?: string;
+  batchYear: string;
+  subjectId: string;
+  testType: TestType;
+  examConfig: ExamConfig;
+  questionConfig: QuestionConfig;
+  students: Student[];
+  coAttainment: COScores;     // attainment level 0-3 per CO
+  coPercentage: COScores;     // raw % per CO
+  isActive: boolean;
+  savedAt: string;            // ISO string
+}
+
+export interface AttainmentResult {
+  batchYear: string;
+  subjectId: string;
+  internalAttainment: COScores;
+  directAttainment: COScores;
+  indirectAttainment: COScores;   // entered manually
+  finalAttainment: COScores;
+  levels: COScores;
+  computedAt: string;
 }
 
 // Default values to initialize the system
