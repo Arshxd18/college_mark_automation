@@ -286,7 +286,7 @@ export default function AttainmentDashboard() {
                             <tbody className="divide-y divide-gray-100">
                                 <tr className="bg-gray-50/50">
                                     <td className="px-4 py-3 text-xs font-semibold text-gray-600">CO Average<br /><span className="font-normal text-gray-400">(Internal 1 + Internal 2) / 2</span></td>
-                                    {CO_KEYS.map(co => <td key={co} className="px-4 py-3 text-center font-mono text-gray-800">{result.coAttainmentAvg[co].toFixed(2)}</td>)}
+                                    {CO_KEYS.map(co => <td key={co} className="px-4 py-3 text-center font-mono text-gray-800">{(result.coAttainmentAvg?.[co] ?? 0).toFixed(2)}</td>)}
                                 </tr>
                                 <tr>
                                     <td className="px-4 py-3 text-xs font-semibold text-gray-600">Internal Attainment<br /><span className="font-normal text-gray-400">CO_Avg×60% + UT×15% + Asgn×25%</span></td>
