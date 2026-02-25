@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Student, Marks, QuestionConfig } from "@/types";
-import { QUESTION_ORDER } from "@/lib/constants";
 import { Plus, Trash2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +31,15 @@ export default function MarksEntry({
         onUpdateMarks(studentIndex, updatedMarks);
     };
 
+    const activeQuestions = React.useMemo(() => {
+        return Object.keys(questionConfig).sort((a, b) => {
+            const numA = Number(a.match(/\\d+/)?.[0] || 0);
+            const numB = Number(b.match(/\\d+/)?.[0] || 0);
+            if (numA !== numB) return numA - numB;
+            return a.localeCompare(b);
+        });
+    }, [questionConfig]);
+
     return (
         <div className="space-y-4">
             <div className="glass-panel overflow-hidden border border-white/40 shadow-xl">
@@ -42,7 +50,7 @@ export default function MarksEntry({
                                 <th className="p-4 border-b border-indigo-100 min-w-[60px] sticky left-0 z-30 bg-white/80 backdrop-blur-md">Sl</th>
                                 <th className="p-4 border-b border-indigo-100 min-w-[140px] sticky left-[60px] z-30 bg-white/80 backdrop-blur-md">Register No</th>
                                 <th className="p-4 border-b border-indigo-100 min-w-[200px] sticky left-[200px] z-30 bg-white/80 backdrop-blur-md">Student Name</th>
-                                {QUESTION_ORDER.map((qId) => (
+                                {activeQuestions.map((qId) => (
                                     <th key={qId} className="p-2 border-b border-l border-indigo-50 text-center min-w-[70px] bg-indigo-50/30">
                                         <div className="flex flex-col items-center">
                                             <span className="uppercase text-xs font-bold text-indigo-900">{qId}</span>
@@ -57,7 +65,7 @@ export default function MarksEntry({
                         <tbody className="divide-y divide-indigo-50">
                             {students.length === 0 ? (
                                 <tr>
-                                    <td colSpan={QUESTION_ORDER.length + 4} className="p-12 text-center text-gray-400 italic">
+                                    <td colSpan={activeQuestions.length + 4} className="p-12 text-center text-gray-400 italic">
                                         No students added yet. Click "Add Student" to start entering marks.
                                     </td>
                                 </tr>
@@ -83,7 +91,7 @@ export default function MarksEntry({
                                                 className="w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded px-2 py-1 text-gray-700 font-medium placeholder:text-gray-300 transition-all"
                                             />
                                         </td>
-                                        {QUESTION_ORDER.map((qId) => {
+                                        {activeQuestions.map((qId) => {
                                             const max = questionConfig[qId]?.maxMark || 0;
                                             const val = student.marks[qId] ?? "";
                                             const isInvalid = Number(val) > max;

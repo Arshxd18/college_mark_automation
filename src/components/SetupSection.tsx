@@ -2,7 +2,6 @@
 
 import React from "react";
 import { ExamConfig, QuestionConfig, COLabel } from "@/types";
-import { QUESTION_ORDER } from "@/lib/constants";
 import { ChevronDown, ChevronUp, Settings, Upload, CloudUpload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
 const CO_OPTIONS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
@@ -144,7 +143,12 @@ export default function SetupSection({
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {QUESTION_ORDER.map((qId) => (
+                            {Object.keys(questionConfig).sort((a, b) => {
+                                const numA = Number(a.match(/\\d+/)?.[0] || 0);
+                                const numB = Number(b.match(/\\d+/)?.[0] || 0);
+                                if (numA !== numB) return numA - numB;
+                                return a.localeCompare(b);
+                            }).map((qId) => (
                                 <div key={qId} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
                                     <div className="w-12 text-center font-bold text-gray-700 uppercase">
                                         {qId}

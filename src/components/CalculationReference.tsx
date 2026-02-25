@@ -2,7 +2,7 @@
 
 import React from "react";
 import { QuestionConfig, COLabel } from "@/types";
-import { QUESTION_ORDER } from "@/lib/constants";
+
 
 interface CalculationReferenceProps {
     questionConfig: QuestionConfig;
@@ -19,7 +19,14 @@ export default function CalculationReference({ questionConfig }: CalculationRefe
         co6: { questions: [], totalMax: 0 },
     };
 
-    QUESTION_ORDER.forEach((qId) => {
+    const activeQuestions = Object.keys(questionConfig).sort((a, b) => {
+        const numA = Number(a.match(/\\d+/)?.[0] || 0);
+        const numB = Number(b.match(/\\d+/)?.[0] || 0);
+        if (numA !== numB) return numA - numB;
+        return a.localeCompare(b);
+    });
+
+    activeQuestions.forEach((qId) => {
         const config = questionConfig[qId];
         if (config) {
             const { co, maxMark } = config;
