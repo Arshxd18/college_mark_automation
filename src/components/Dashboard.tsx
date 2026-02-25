@@ -9,6 +9,7 @@ import CalculationReference from "./CalculationReference";
 import SetupSection from "./SetupSection";
 import { Download, BarChart3, Calculator, Table as TableIcon, BookOpen, Menu, X, CloudUpload, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { saveAssessment } from "@/lib/firestoreService";
+import { parseExcelUpload } from "@/lib/excel-parser";
 
 import Header from "./Header";
 import Footer from "./Footer";
@@ -20,6 +21,8 @@ export default function Dashboard() {
     const [students, setStudents] = useState<Student[]>([]);
     const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
     const [saveError, setSaveError] = useState("");
+    const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
+    const [uploadError, setUploadError] = useState("");
 
     const [examConfig, setExamConfig] = useState<ExamConfig>({
         academicYear: "2025-2026",
@@ -144,6 +147,45 @@ export default function Dashboard() {
         }
     };
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadStatus("uploading");
+        setUploadError("");
+
+        try {
+            const parsed = await parseExcelUpload(file);
+
+            // Apply the parsed config and students
+            setQuestionConfig(parsed.questionConfig);
+
+            // Map parsed students into Student type expected by dashboard
+            const newStudents: Student[] = parsed.students.map((s: any) => ({
+                id: crypto.randomUUID(),
+                slNo: s.slNo,
+                regNo: s.regNo,
+                rollNo: "",
+                name: s.name,
+                marks: s.marks || {},
+            }));
+
+            setStudents(newStudents);
+
+            // Open entry tab to verify
+            setActiveTab("entry");
+            setIsSetupOpen(false); // Close setup if open to show the table
+            setUploadStatus("success");
+
+            setTimeout(() => setUploadStatus("idle"), 3000);
+        } catch (err: any) {
+            console.error(err);
+            setUploadError(err.message || "Failed to parse Excel file.");
+            setUploadStatus("error");
+            setTimeout(() => setUploadStatus("idle"), 5000);
+        }
+    };
+
     const SaveButtonContent = () => {
         if (saveStatus === "saving") return <><Loader2 className="w-4 h-4 animate-spin" />Saving...</>;
         if (saveStatus === "success") return <><CheckCircle className="w-4 h-4" />Saved!</>;
@@ -258,6 +300,11 @@ export default function Dashboard() {
                     isOpen={isSetupOpen}
                     onToggle={() => setIsSetupOpen(!isSetupOpen)}
                     onReset={handleResetConfig}
+                    onFileUpload={handleFileUpload}
+                    uploadStatus={uploadStatus}
+                    uploadError={uploadError}
+                    onSaveToFirebase={handleSaveToFirebase}
+                    saveStatus={saveStatus}
                 />
 
                 <div className="animate-in fade-in duration-500 mt-6">

@@ -114,12 +114,13 @@ export default function AttainmentDashboard() {
         setComputing(true);
         setSaved(false);
         try {
-            const { internalAttainment, directAttainment, finalAttainment, levels, missing: miss } = computeAttainment(assessments, indirect);
+            const { coAttainmentAvg, internalAttainment, directAttainment, finalAttainment, levels, missing: miss } = computeAttainment(assessments, indirect);
             setMissing(miss);
 
             const attainmentResult: AttainmentResult = {
                 batchYear: selectedBatch,
                 subjectId: selectedSubject,
+                coAttainmentAvg,
                 internalAttainment,
                 directAttainment,
                 indirectAttainment: indirect,
@@ -283,8 +284,12 @@ export default function AttainmentDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
+                                <tr className="bg-gray-50/50">
+                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">CO Average<br /><span className="font-normal text-gray-400">(Internal 1 + Internal 2) / 2</span></td>
+                                    {CO_KEYS.map(co => <td key={co} className="px-4 py-3 text-center font-mono text-gray-800">{result.coAttainmentAvg[co].toFixed(2)}</td>)}
+                                </tr>
                                 <tr>
-                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">Internal Attainment<br /><span className="font-normal text-gray-400">CO×60% + UT×15% + Asgn×25%</span></td>
+                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">Internal Attainment<br /><span className="font-normal text-gray-400">CO_Avg×60% + UT×15% + Asgn×25%</span></td>
                                     {CO_KEYS.map(co => <td key={co} className="px-4 py-3 text-center font-mono text-gray-800">{result.internalAttainment[co].toFixed(2)}</td>)}
                                 </tr>
                                 <tr className="bg-blue-50/30">

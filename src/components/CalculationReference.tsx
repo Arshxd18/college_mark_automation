@@ -86,38 +86,54 @@ export default function CalculationReference({ questionConfig }: CalculationRefe
                 <div className="glass-panel p-6 shadow-xl border border-white/40">
                     <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <span className="w-2 h-6 bg-purple-500 rounded-full"></span>
-                        Formulas Used
+                        Full Engine Attainment Formulas
                     </h3>
                     <div className="space-y-6">
                         <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100">
-                            <h4 className="font-semibold text-purple-900 mb-2">1. CO Attainment Value</h4>
+                            <h4 className="font-semibold text-purple-900 mb-2">1. Internal Attainment</h4>
                             <p className="text-sm text-gray-600 mb-2">
-                                The sum of marks obtained by a student in all questions mapped to a specific CO.
+                                Derived from continuous assessments: CO Exams, Unit Tests, and Assignments.
                             </p>
                             <code className="block bg-white p-3 rounded-lg border border-purple-100 text-xs font-mono text-gray-700">
-                                CO_Value = ∑ (Marks obtained in Questions mapped to CO)
+                                CO_Average = (Internal 1 + Internal 2) / 2<br />
+                                Internal = (CO_Average × 60%) + (UT_Percentage × 15%) + (Assignment_Percentage × 25%)
                             </code>
                         </div>
 
                         <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100">
-                            <h4 className="font-semibold text-purple-900 mb-2">2. CO Attainment Percentage</h4>
+                            <h4 className="font-semibold text-purple-900 mb-2">2. Direct Attainment</h4>
                             <p className="text-sm text-gray-600 mb-2">
-                                The ratio of the obtained CO Value to the maximum possible marks for that CO.
+                                Combines the University Semester End Examination with Internal Attainment.
                             </p>
                             <code className="block bg-white p-3 rounded-lg border border-purple-100 text-xs font-mono text-gray-700">
-                                CO% = (CO_Value / CO_Max_Marks) × 100
+                                Direct = (Semester_Percentage × 60%) + (Internal_Attainment × 40%)
                             </code>
-                            <p className="text-xs text-gray-500 mt-2 italic">
-                                * If CO_Max_Marks is 0, Percentage is shown as 0 (No #DIV/0 error).
-                            </p>
                         </div>
 
                         <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100">
-                            <h4 className="font-semibold text-purple-900 mb-2">3. Part-Wise Totals</h4>
-                            <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
-                                <li><strong>Part A:</strong> Sum of mapped CO max marks for Q1–Q10.</li>
-                                <li><strong>Part B (a):</strong> Sum of mapped CO max marks for Q11a–Q16a.</li>
-                                <li><strong>Part B (b):</strong> Sum of mapped CO max marks for Q11b–Q16b.</li>
+                            <h4 className="font-semibold text-purple-900 mb-2">3. Indirect Attainment</h4>
+                            <p className="text-sm text-gray-600 mb-2">
+                                Values from 0 to 3, directly taken from the Course-End Survey feedback.
+                            </p>
+                        </div>
+
+                        <div className="bg-indigo-50/80 p-5 rounded-xl border border-indigo-200 shadow-sm">
+                            <h4 className="font-bold text-indigo-900 mb-2">4. Final Attainment</h4>
+                            <p className="text-sm text-gray-700 mb-2">
+                                Final calculation determining the overall success level. Target is generally &gt; 2.0.
+                            </p>
+                            <code className="block bg-white p-3 rounded-lg border border-indigo-200 font-bold text-sm font-mono text-indigo-700">
+                                Final_Attainment = (Direct_Attainment × 90%) + (Indirect_Attainment × 10%)
+                            </code>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <h4 className="font-semibold text-gray-800 mb-2">Level Thresholds</h4>
+                            <ul className="text-sm text-gray-600 space-y-1">
+                                <li><span className="font-bold text-emerald-600">Level 3 (High):</span> ≥ 60% of students scored above target.</li>
+                                <li><span className="font-bold text-yellow-600">Level 2 (Medium):</span> 50% - 59% of students scored above target.</li>
+                                <li><span className="font-bold text-orange-600">Level 1 (Low):</span> 40% - 49% of students scored above target.</li>
+                                <li><span className="font-bold text-red-600">Level 0:</span> &lt; 40% of students scored above target.</li>
                             </ul>
                         </div>
                     </div>

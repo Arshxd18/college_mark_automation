@@ -54,22 +54,19 @@ export default function Header() {
                         <span className="hidden sm:inline">Attainment</span>
                     </Link>
 
-                    {/* Dashboard / Upload toggle */}
-                    {pathname === "/upload" ? (
+                    {/* Dashboard Link */}
+                    {pathname !== "/" && (
                         <Link
                             href="/"
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-100/50 rounded-lg transition-all"
+                            className={cn(
+                                "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all",
+                                pathname === "/"
+                                    ? "bg-violet-100 text-violet-700"
+                                    : "text-gray-600 hover:text-violet-600 hover:bg-violet-50"
+                            )}
                         >
                             <LayoutDashboard className="w-4 h-4" />
                             <span className="hidden sm:inline">Dashboard</span>
-                        </Link>
-                    ) : (
-                        <Link
-                            href="/upload"
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow transition-all hover:-translate-y-0.5"
-                        >
-                            <Upload className="w-4 h-4" />
-                            <span className="hidden sm:inline">Upload Analyzer</span>
                         </Link>
                     )}
 

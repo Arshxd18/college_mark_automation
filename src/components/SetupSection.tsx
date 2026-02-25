@@ -3,7 +3,7 @@
 import React from "react";
 import { ExamConfig, QuestionConfig, COLabel } from "@/types";
 import { QUESTION_ORDER } from "@/lib/constants";
-import { ChevronDown, ChevronUp, Settings } from "lucide-react";
+import { ChevronDown, ChevronUp, Settings, Upload, CloudUpload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
 const CO_OPTIONS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
 
@@ -23,6 +23,11 @@ interface SetupSectionProps {
     isOpen: boolean;
     onToggle: () => void;
     onReset: () => void;
+    onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    uploadStatus: "idle" | "uploading" | "success" | "error";
+    uploadError: string;
+    onSaveToFirebase: () => void;
+    saveStatus: "idle" | "saving" | "success" | "error";
 }
 
 export default function SetupSection({
@@ -33,6 +38,11 @@ export default function SetupSection({
     isOpen,
     onToggle,
     onReset,
+    onFileUpload,
+    uploadStatus,
+    uploadError,
+    onSaveToFirebase,
+    saveStatus,
 }: SetupSectionProps) {
 
     const handleQuestionConfigChange = (qId: string, field: "co" | "maxMark", value: any) => {
@@ -168,13 +178,65 @@ export default function SetupSection({
                         </div>
                     </div>
 
-                    <div className="flex justify-end">
-                        <button
-                            onClick={onToggle}
-                            className="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
-                        >
-                            Save & Close Setup
-                        </button>
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 pt-6">
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            {/* Hidden File Input */}
+                            <input
+                                type="file"
+                                id="excel-upload"
+                                accept=".xlsx"
+                                className="hidden"
+                                onChange={onFileUpload}
+                            />
+
+                            <label
+                                htmlFor="excel-upload"
+                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer w-full sm:w-auto 
+                                    ${uploadStatus === "uploading" ? "bg-indigo-100 text-indigo-400 cursor-not-allowed" :
+                                        uploadStatus === "success" ? "bg-green-100 text-green-700" :
+                                            "bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50"}`}
+                            >
+                                {uploadStatus === "uploading" ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                                    uploadStatus === "success" ? <CheckCircle className="w-4 h-4" /> :
+                                        <Upload className="w-4 h-4" />}
+                                {uploadStatus === "uploading" ? "Uploading..." :
+                                    uploadStatus === "success" ? "Uploaded!" :
+                                        "Upload Assessment Tracker"}
+                            </label>
+
+                            {uploadError && (
+                                <span className="text-xs text-red-500 font-medium flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" /> Failed
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <button
+                                onClick={onSaveToFirebase}
+                                disabled={saveStatus === "saving"}
+                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto 
+                                    ${saveStatus === "saving" ? "bg-violet-400 text-white cursor-not-allowed" :
+                                        saveStatus === "success" ? "bg-emerald-600 text-white" :
+                                            saveStatus === "error" ? "bg-red-600 text-white" :
+                                                "bg-violet-600 text-white hover:bg-violet-700 shadow-sm"}`}
+                            >
+                                {saveStatus === "saving" ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                                    saveStatus === "success" ? <CheckCircle className="w-4 h-4" /> :
+                                        saveStatus === "error" ? <AlertCircle className="w-4 h-4" /> :
+                                            <CloudUpload className="w-4 h-4" />}
+                                {saveStatus === "saving" ? "Saving..." :
+                                    saveStatus === "success" ? "Saved!" :
+                                        "Save Data to Firebase"}
+                            </button>
+
+                            <button
+                                onClick={onToggle}
+                                className="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors hidden sm:block"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
 
                 </div>

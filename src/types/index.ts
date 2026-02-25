@@ -88,6 +88,7 @@ export interface AssessmentDoc {
 export interface AttainmentResult {
   batchYear: string;
   subjectId: string;
+  coAttainmentAvg: COScores;
   internalAttainment: COScores;
   directAttainment: COScores;
   indirectAttainment: COScores;

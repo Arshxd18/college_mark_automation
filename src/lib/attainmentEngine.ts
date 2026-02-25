@@ -119,6 +119,7 @@ export function computeAttainment(
     docs: AssessmentDoc[],
     indirectAttainment: COScores
 ): {
+    coAttainmentAvg: COScores;
     internalAttainment: COScores;
     directAttainment: COScores;
     finalAttainment: COScores;
@@ -177,6 +178,7 @@ export function computeAttainment(
     }
 
     return {
+        coAttainmentAvg: coIA,
         internalAttainment: internal,
         directAttainment: direct,
         finalAttainment: final_,
