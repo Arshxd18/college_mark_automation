@@ -12,6 +12,7 @@ export default function UploadAnalyzer() {
     const [data, setData] = useState<ParsedUploadData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [testType, setTestType] = useState<string>("Internal 1");
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -22,7 +23,7 @@ export default function UploadAnalyzer() {
         setError(null);
 
         try {
-            const parsed = await parseExcelUpload(selectedFile);
+            const parsed = await parseExcelUpload(selectedFile, testType);
             setData(parsed);
             setStep("preview");
         } catch (err: any) {
@@ -114,6 +115,21 @@ export default function UploadAnalyzer() {
             {/* Step 1: Upload */}
             {step === "upload" && (
                 <div className="max-w-2xl mx-auto">
+                    <div className="mb-6 bg-white p-6 rounded-xl border border-gray-200 shadow-sm text-center">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">Select Test Type Format</label>
+                        <p className="text-xs text-gray-500 mb-4">Different test types use different Excel templates. Please select the correct one before uploading.</p>
+                        <select
+                            value={testType}
+                            onChange={(e) => setTestType(e.target.value)}
+                            className="w-full max-w-sm mx-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                        >
+                            <option value="Internal 1">Internal 1 / Internal 2</option>
+                            <option value="Unit Test">Unit Test (20 marks per unit)</option>
+                            <option value="Assignment">Assignment (6 COs, 10 marks each)</option>
+                            <option value="Semester">Semester</option>
+                        </select>
+                    </div>
+
                     <div className="border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center hover:bg-gray-50 transition-colors relative">
                         <input
                             type="file"

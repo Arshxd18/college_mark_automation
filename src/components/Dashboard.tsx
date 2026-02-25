@@ -155,7 +155,7 @@ export default function Dashboard() {
         setUploadError("");
 
         try {
-            const parsed = await parseExcelUpload(file);
+            const parsed = await parseExcelUpload(file, examConfig.testType);
 
             // Apply the parsed config and students
             setQuestionConfig(parsed.questionConfig);
