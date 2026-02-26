@@ -2,7 +2,7 @@ import { AssessmentDoc, COScores, AttainmentResult, TestType, Student, QuestionC
 import { calculateCOAttainment, calculateCOMaxMarks } from "./calculations";
 
 const CO_KEYS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
-const THRESHOLD = 60; // Min student score % to count as "passed"
+const THRESHOLD = 60; // Min student CO% to count as "passed"
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -15,19 +15,17 @@ export interface COAttainmentStats {
 
 export interface ComputedAssessment {
     coMax: Partial<Record<COLabel, number>>;
-    studentCO: Record<COLabel, number>[]; // per-student raw scores
+    studentCO: Record<COLabel, number>[]; // per-student CO percentage
     attainment: Record<COLabel, COAttainmentStats>;
 }
 
-// ── Level Logic ────────────────────────────────────────────────
-
+// ── Level Thresholds ────────────────────────────────────────────
 /**
- * Level thresholds (per spec):
- *   > 70  → Level 3
- *   ≥ 60  → Level 2
- *   ≥ 50  → Level 1
- *   else  → Level 0
- * (70% exactly → Level 2, matching Excel screenshot behaviour)
+ * Threshold based on % of students scoring ≥60%:
+ *   > 70%  → Level 3
+ *   ≥ 60%  → Level 2
+ *   ≥ 50%  → Level 1
+ *   else   → Level 0
  */
 export function getAttainmentLevel(pct: number): number {
     if (pct > 70) return 3;
@@ -37,10 +35,10 @@ export function getAttainmentLevel(pct: number): number {
 }
 
 // ── Per-Assessment CO Computation ─────────────────────────────
-
 /**
  * Compute all CO attainment statistics for a set of students.
- * Returns ComputedAssessment with per-student scores, coMax, and aggregated stats.
+ * Returns per-student CO %, CO max marks, and aggregated attainment stats
+ * including level (0-3) for each CO.
  */
 export function computeAssessmentCO(
     students: Student[],
@@ -72,12 +70,12 @@ export function computeAssessmentCO(
     for (const co of CO_KEYS) {
         const maxForCO = coMax[co] ?? 0;
         if (maxForCO === 0) {
-            // CO has no mapped questions
             attainment[co] = { attended: 0, scoring60: 0, pct: null, level: "N/A" };
         } else {
             const vals = totals[co];
             const attended = vals.length;
             const scoring60 = vals.filter(v => v >= THRESHOLD).length;
+            // pct = % of students who scored >= 60% for this CO
             const pct = attended > 0 ? parseFloat(((scoring60 / attended) * 100).toFixed(2)) : 0;
             attainment[co] = { attended, scoring60, pct, level: getAttainmentLevel(pct) };
         }
@@ -86,9 +84,13 @@ export function computeAssessmentCO(
     return { coMax, studentCO, attainment };
 }
 
-// ── Average CO% across docs ───────────────────────────────────
-
-function avgCoPercent(docs: AssessmentDoc[]): Record<COLabel, number> {
+// ── Average Level per CO across multiple docs ──────────────────
+/**
+ * Averages the computed LEVEL (0–3) per CO across a set of assessment documents.
+ * This matches the Excel formula where each assessment type contributes its level,
+ * not its raw percentage.
+ */
+function avgCoLevel(docs: AssessmentDoc[]): Record<COLabel, number> {
     const totals: Record<COLabel, number> = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
     const counts: Record<COLabel, number> = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
 
@@ -96,9 +98,9 @@ function avgCoPercent(docs: AssessmentDoc[]): Record<COLabel, number> {
         const att = doc.computed?.attainment;
         if (!att) continue;
         for (const co of CO_KEYS) {
-            const pct = att[co]?.pct;
-            if (pct !== null && pct !== undefined) {
-                totals[co] += pct;
+            const lvl = att[co]?.level;
+            if (lvl !== null && lvl !== undefined && lvl !== "N/A") {
+                totals[co] += lvl as number;
                 counts[co]++;
             }
         }
@@ -114,7 +116,18 @@ function avgCoPercent(docs: AssessmentDoc[]): Record<COLabel, number> {
 }
 
 // ── Final Attainment Chain ─────────────────────────────────────
-
+/**
+ * Computes the full attainment chain (Internal → Direct → Final) for a subject.
+ *
+ * KEY: All intermediate values (coIA, coUT, coAS, coSEM) are LEVELS (0–3),
+ * matching the Excel reference sheet exactly:
+ *
+ *   Internal = IA_Level×0.60 + UT_Level×0.15 + AS_Level×0.25
+ *   Direct   = SEE_Level×0.60 + Internal×0.40
+ *   Final    = Direct×0.90 + Indirect×0.10
+ *
+ * Indirect attainment (from course-end survey) is entered by the user as 0–3.
+ */
 export function computeAttainment(
     docs: AssessmentDoc[],
     indirectAttainment: COScores
@@ -126,6 +139,8 @@ export function computeAttainment(
     levels: Record<COLabel, number | "N/A">;
     missing: string[];
 } {
+    const zero = (): Record<COLabel, number> => ({ co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 });
+
     const byType: Record<TestType, AssessmentDoc | undefined> = {
         "Internal 1": undefined,
         "Internal 2": undefined,
@@ -142,39 +157,44 @@ export function computeAttainment(
     if (!byType["Assignment"]) missing.push("Assignment");
     if (!byType["Semester"]) missing.push("Semester");
 
-    const coIA = avgCoPercent(internalDocs);
-    const coUT = byType["Unit Test"] ? avgCoPercent([byType["Unit Test"]]) : { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
-    const coAS = byType["Assignment"] ? avgCoPercent([byType["Assignment"]]) : { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
-    const coSEM = byType["Semester"] ? avgCoPercent([byType["Semester"]]) : { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
+    // Collect LEVEL per CO from each assessment type
+    const coIA = avgCoLevel(internalDocs);
+    const coUT = byType["Unit Test"] ? avgCoLevel([byType["Unit Test"]!]) : zero();
+    const coAS = byType["Assignment"] ? avgCoLevel([byType["Assignment"]!]) : zero();
+    const coSEM = byType["Semester"] ? avgCoLevel([byType["Semester"]!]) : zero();
 
-    const internal: COScores = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
-    const direct: COScores = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
-    const final_: COScores = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
-    const levels: Record<COLabel, number | "N/A"> = { co1: "N/A", co2: "N/A", co3: "N/A", co4: "N/A", co5: "N/A", co6: "N/A" };
+    const internal: COScores = zero() as COScores;
+    const direct: COScores = zero() as COScores;
+    const final_: COScores = zero() as COScores;
+    const levels: Record<COLabel, number | "N/A"> = {
+        co1: "N/A", co2: "N/A", co3: "N/A", co4: "N/A", co5: "N/A", co6: "N/A",
+    };
 
-    // Determine which COs are N/A across ALL uploaded docs
+    // Determine which COs have no mapped questions across all uploads
     const allDocs = Object.values(byType).filter(Boolean) as AssessmentDoc[];
-    const coIsNA: Record<COLabel, boolean> = { co1: false, co2: false, co3: false, co4: false, co5: false, co6: false };
+    const coIsNA: Record<COLabel, boolean> = {
+        co1: false, co2: false, co3: false, co4: false, co5: false, co6: false,
+    };
     for (const co of CO_KEYS) {
-        const allNA = allDocs.length > 0 && allDocs.every(d => d.computed?.attainment?.[co]?.pct === null);
-        coIsNA[co] = allNA;
+        coIsNA[co] = allDocs.length > 0 &&
+            allDocs.every(d => d.computed?.attainment?.[co]?.level === "N/A");
     }
 
     for (const co of CO_KEYS) {
         if (coIsNA[co]) {
-            // No questions mapped to this CO — skip entirely
             levels[co] = "N/A";
             continue;
         }
 
+        // Formula: Level arithmetic (0–3 scale throughout)
         internal[co] = parseFloat((coIA[co] * 0.60 + coUT[co] * 0.15 + coAS[co] * 0.25).toFixed(4));
         direct[co] = parseFloat((coSEM[co] * 0.60 + internal[co] * 0.40).toFixed(4));
         const ind = indirectAttainment[co] ?? 0;
         final_[co] = parseFloat((direct[co] * 0.90 + ind * 0.10).toFixed(4));
 
-        // Final % for level: treat final_ as a score out of 100 for level classification
-        // The level formula uses the raw pct already, so we reuse on the direct% which is already 0-100 scale
-        levels[co] = getAttainmentLevel(final_[co]);
+        // Convert final score (0-3 scale) back to % for level classification
+        const finalPct = (final_[co] / 3) * 100;
+        levels[co] = getAttainmentLevel(finalPct);
     }
 
     return {
