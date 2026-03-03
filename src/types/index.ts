@@ -88,7 +88,10 @@ export interface AssessmentDoc {
 export interface AttainmentResult {
   batchYear: string;
   subjectId: string;
-  coAttainmentAvg: COScores;
+  coAttainmentAvg: COScores;       // IA (Internal avg) level per CO
+  unitTestLevel: COScores;          // Unit Test level per CO
+  assignmentLevel: COScores;        // Assignment level per CO
+  semesterLevel: COScores;          // Semester (SEE) level per CO
   internalAttainment: COScores;
   directAttainment: COScores;
   indirectAttainment: COScores;

@@ -132,7 +132,10 @@ export function computeAttainment(
     docs: AssessmentDoc[],
     indirectAttainment: COScores
 ): {
-    coAttainmentAvg: COScores;
+    coAttainmentAvg: COScores;      // IA level per CO (avg of Int1 & Int2)
+    unitTestLevel: COScores;         // Unit Test level per CO
+    assignmentLevel: COScores;       // Assignment level per CO
+    semesterLevel: COScores;         // Semester level per CO
     internalAttainment: COScores;
     directAttainment: COScores;
     finalAttainment: COScores;
@@ -198,7 +201,10 @@ export function computeAttainment(
     }
 
     return {
-        coAttainmentAvg: coIA,
+        coAttainmentAvg: coIA as COScores,
+        unitTestLevel: coUT as COScores,
+        assignmentLevel: coAS as COScores,
+        semesterLevel: coSEM as COScores,
         internalAttainment: internal,
         directAttainment: direct,
         finalAttainment: final_,

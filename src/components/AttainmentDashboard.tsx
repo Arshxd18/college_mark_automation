@@ -114,13 +114,26 @@ export default function AttainmentDashboard() {
         setComputing(true);
         setSaved(false);
         try {
-            const { coAttainmentAvg, internalAttainment, directAttainment, finalAttainment, levels, missing: miss } = computeAttainment(assessments, indirect);
+            const {
+                coAttainmentAvg,
+                unitTestLevel,
+                assignmentLevel,
+                semesterLevel,
+                internalAttainment,
+                directAttainment,
+                finalAttainment,
+                levels,
+                missing: miss,
+            } = computeAttainment(assessments, indirect);
             setMissing(miss);
 
             const attainmentResult: AttainmentResult = {
                 batchYear: selectedBatch,
                 subjectId: selectedSubject,
                 coAttainmentAvg,
+                unitTestLevel,
+                assignmentLevel,
+                semesterLevel,
                 internalAttainment,
                 directAttainment,
                 indirectAttainment: indirect,
@@ -275,43 +288,160 @@ export default function AttainmentDashboard() {
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                            <thead className="bg-gray-50 border-b-2 border-gray-200">
                                 <tr>
-                                    <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Metric</th>
+                                    <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase w-48">Metric</th>
                                     {CO_KEYS.map(co => (
                                         <th key={co} className="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-center">{co.toUpperCase()}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
+
+                                {/* ── Section 1: per-assessment Levels ── */}
+                                <tr>
+                                    <td colSpan={7} className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 border-b border-gray-100">
+                                        Assessment Levels (0–3)
+                                    </td>
+                                </tr>
+
+                                {/* CO Average (IA) */}
+                                <tr className="bg-indigo-50/40">
+                                    <td className="px-4 py-3 text-xs font-semibold text-indigo-700">
+                                        CO Average <span className="text-gray-400 font-normal">(IA)</span><br />
+                                        <span className="font-normal text-gray-400">(Int1 + Int2) ÷ 2 → Level</span>
+                                    </td>
+                                    {CO_KEYS.map(co => {
+                                        const lv = result.coAttainmentAvg?.[co] ?? 0;
+                                        return (
+                                            <td key={co} className="px-4 py-3 text-center">
+                                                <span className="font-mono text-xs text-gray-600 block">{lv.toFixed(4)}</span>
+                                                <LevelBadge level={Math.round(lv)} />
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+
+                                {/* Unit Test */}
+                                <tr>
+                                    <td className="px-4 py-3 text-xs font-semibold text-sky-700">
+                                        Unit Test Level<br />
+                                        <span className="font-normal text-gray-400">% ≥60% → Level</span>
+                                    </td>
+                                    {CO_KEYS.map(co => {
+                                        const lv = result.unitTestLevel?.[co] ?? 0;
+                                        return (
+                                            <td key={co} className="px-4 py-3 text-center">
+                                                <span className="font-mono text-xs text-gray-600 block">{lv.toFixed(4)}</span>
+                                                <LevelBadge level={Math.round(lv)} />
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+
+                                {/* Assignment */}
+                                <tr className="bg-amber-50/40">
+                                    <td className="px-4 py-3 text-xs font-semibold text-amber-700">
+                                        Assignment Level<br />
+                                        <span className="font-normal text-gray-400">% ≥60% → Level</span>
+                                    </td>
+                                    {CO_KEYS.map(co => {
+                                        const lv = result.assignmentLevel?.[co] ?? 0;
+                                        return (
+                                            <td key={co} className="px-4 py-3 text-center">
+                                                <span className="font-mono text-xs text-gray-600 block">{lv.toFixed(4)}</span>
+                                                <LevelBadge level={Math.round(lv)} />
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+
+                                {/* Semester */}
+                                <tr>
+                                    <td className="px-4 py-3 text-xs font-semibold text-teal-700">
+                                        Semester Level <span className="text-gray-400 font-normal">(SEE)</span><br />
+                                        <span className="font-normal text-gray-400">% ≥60% → Level</span>
+                                    </td>
+                                    {CO_KEYS.map(co => {
+                                        const lv = result.semesterLevel?.[co] ?? 0;
+                                        return (
+                                            <td key={co} className="px-4 py-3 text-center">
+                                                <span className="font-mono text-xs text-gray-600 block">{lv.toFixed(4)}</span>
+                                                <LevelBadge level={Math.round(lv)} />
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+
+                                {/* ── Section 2: Calculation Chain ── */}
+                                <tr>
+                                    <td colSpan={7} className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 border-b border-gray-100">
+                                        Attainment Calculation Chain
+                                    </td>
+                                </tr>
+
+                                {/* Internal */}
                                 <tr className="bg-gray-50/50">
-                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">CO Average<br /><span className="font-normal text-gray-400">(Internal 1 + Internal 2) / 2</span></td>
-                                    {CO_KEYS.map(co => <td key={co} className="px-4 py-3 text-center font-mono text-gray-800">{(result.coAttainmentAvg?.[co] ?? 0).toFixed(2)}</td>)}
+                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">
+                                        Internal Attainment<br />
+                                        <span className="font-normal text-gray-400">IA×0.60 + UT×0.15 + Asgn×0.25</span>
+                                    </td>
+                                    {CO_KEYS.map(co => (
+                                        <td key={co} className="px-4 py-3 text-center font-mono font-semibold text-gray-800">
+                                            {result.internalAttainment[co].toFixed(4)}
+                                        </td>
+                                    ))}
                                 </tr>
-                                <tr>
-                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">Internal Attainment<br /><span className="font-normal text-gray-400">CO_Avg×60% + UT×15% + Asgn×25%</span></td>
-                                    {CO_KEYS.map(co => <td key={co} className="px-4 py-3 text-center font-mono text-gray-800">{result.internalAttainment[co].toFixed(2)}</td>)}
-                                </tr>
+
+                                {/* Direct */}
                                 <tr className="bg-blue-50/30">
-                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">Direct Attainment<br /><span className="font-normal text-gray-400">Sem×60% + Internal×40%</span></td>
-                                    {CO_KEYS.map(co => <td key={co} className="px-4 py-3 text-center font-mono text-indigo-700 font-semibold">{result.directAttainment[co].toFixed(2)}</td>)}
+                                    <td className="px-4 py-3 text-xs font-semibold text-blue-700">
+                                        Direct Attainment<br />
+                                        <span className="font-normal text-gray-400">SEE×0.60 + Internal×0.40</span>
+                                    </td>
+                                    {CO_KEYS.map(co => (
+                                        <td key={co} className="px-4 py-3 text-center font-mono font-semibold text-blue-700">
+                                            {result.directAttainment[co].toFixed(4)}
+                                        </td>
+                                    ))}
                                 </tr>
+
+                                {/* Indirect */}
                                 <tr>
-                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">Indirect Attainment<br /><span className="font-normal text-gray-400">Course-End Survey</span></td>
-                                    {CO_KEYS.map(co => <td key={co} className="px-4 py-3 text-center font-mono text-gray-800">{result.indirectAttainment[co].toFixed(2)}</td>)}
+                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">
+                                        Indirect Attainment<br />
+                                        <span className="font-normal text-gray-400">Course-End Survey (0–3)</span>
+                                    </td>
+                                    {CO_KEYS.map(co => (
+                                        <td key={co} className="px-4 py-3 text-center font-mono text-gray-700">
+                                            {result.indirectAttainment[co].toFixed(2)}
+                                        </td>
+                                    ))}
                                 </tr>
+
+                                {/* Final */}
                                 <tr className="bg-violet-50/50">
-                                    <td className="px-4 py-3 text-xs font-bold text-violet-700">Final Attainment<br /><span className="font-normal text-gray-400">Direct×90% + Indirect×10%</span></td>
-                                    {CO_KEYS.map(co => <td key={co} className="px-4 py-3 text-center font-mono text-violet-800 font-bold text-base">{result.finalAttainment[co].toFixed(3)}</td>)}
+                                    <td className="px-4 py-3 text-xs font-bold text-violet-700">
+                                        Final Attainment<br />
+                                        <span className="font-normal text-gray-400">Direct×0.90 + Indirect×0.10</span>
+                                    </td>
+                                    {CO_KEYS.map(co => (
+                                        <td key={co} className="px-4 py-3 text-center font-mono font-bold text-violet-800 text-base">
+                                            {result.finalAttainment[co].toFixed(4)}
+                                        </td>
+                                    ))}
                                 </tr>
-                                <tr>
-                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">Attainment Level</td>
+
+                                {/* Attainment Level */}
+                                <tr className="bg-violet-100/60 border-t-2 border-violet-200">
+                                    <td className="px-4 py-3 text-xs font-bold text-violet-800">Attainment Level</td>
                                     {CO_KEYS.map(co => (
                                         <td key={co} className="px-4 py-3 text-center">
                                             <LevelBadge level={result.levels[co]} />
                                         </td>
                                     ))}
                                 </tr>
+
                             </tbody>
                         </table>
                     </div>
@@ -327,7 +457,7 @@ export default function AttainmentDashboard() {
                                     <div key={co} className={`p-3 rounded-lg text-center ${positive ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200"}`}>
                                         <div className="text-xs font-bold text-gray-500 uppercase mb-1">{co}</div>
                                         <div className={`text-sm font-bold ${positive ? "text-emerald-700" : "text-red-700"}`}>
-                                            {positive ? "+" : ""}{gap.toFixed(3)}
+                                            {positive ? "+" : ""}{gap.toFixed(4)}
                                         </div>
                                         <div className={`text-[10px] mt-0.5 ${positive ? "text-emerald-600" : "text-red-600"}`}>
                                             {positive ? "✓ Achieved" : "✗ Gap"}
