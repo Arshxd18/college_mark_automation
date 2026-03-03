@@ -41,7 +41,7 @@ export async function saveAssessment(
     const { batchYear, subjectId, testType } = examConfig;
 
     // 1. Compute rich CO stats
-    const computed = computeAssessmentCO(students, questionConfig);
+    const computed = computeAssessmentCO(students, questionConfig, testType);
 
     // 2. Deactivate old docs with same key
     const oldQuery = query(

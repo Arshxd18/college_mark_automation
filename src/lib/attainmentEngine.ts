@@ -61,7 +61,8 @@ export function getCOAvgAttainmentLevel(pct: number): number {
  */
 export function computeAssessmentCO(
     students: Student[],
-    questionConfig: QuestionConfig
+    questionConfig: QuestionConfig,
+    testType?: TestType
 ): ComputedAssessment {
     const coMax = calculateCOMaxMarks(questionConfig) as Record<COLabel, number>;
 
@@ -95,7 +96,8 @@ export function computeAssessmentCO(
             const attended = vals.length;
             const scoring60 = vals.filter(v => v >= THRESHOLD).length;
             const pct = attended > 0 ? parseFloat(((scoring60 / attended) * 100).toFixed(2)) : 0;
-            attainment[co] = { attended, scoring60, pct, level: getAttainmentLevel(pct) };
+            const level = testType === "CO Average" ? getCOAvgAttainmentLevel(pct) : getAttainmentLevel(pct);
+            attainment[co] = { attended, scoring60, pct, level };
         }
     }
 
@@ -229,18 +231,24 @@ export function computeAttainment(
         "Semester": undefined,
         "Unit Test": undefined,
         "Assignment": undefined,
+        "CO Average": undefined,
     };
     for (const doc of docs) byType[doc.testType] = doc;
 
     const missing: string[] = [];
-    if (!byType["Internal 1"] && !byType["Internal 2"]) missing.push("Internal 1 or Internal 2");
+    if (!byType["Internal 1"] && !byType["Internal 2"] && !byType["CO Average"]) missing.push("Internal Assessments / CO Average");
     if (!byType["Unit Test"]) missing.push("Unit Test");
     if (!byType["Assignment"]) missing.push("Assignment");
     if (!byType["Semester"]) missing.push("Semester");
 
     // ── Compute per-assessment LEVEL (0–3) per CO
-    // CO Average: merges Int1 + Int2 student-level and uses >=80→L3 threshold
-    const coIA = computeCoAvgLevel(byType["Internal 1"], byType["Internal 2"]);
+    // CO Average: uses uploaded CO Average template, OR merges Int1 + Int2 student-level and uses >=80→L3 threshold
+    let coIA = zero() as COScores;
+    if (byType["CO Average"]) {
+        coIA = docCoLevel(byType["CO Average"]) as COScores;
+    } else {
+        coIA = computeCoAvgLevel(byType["Internal 1"], byType["Internal 2"]) as COScores;
+    }
     // UT, Assignment, Semester: use their own pre-computed level from computeAssessmentCO
     const coUT = docCoLevel(byType["Unit Test"]);
     const coAS = docCoLevel(byType["Assignment"]);
