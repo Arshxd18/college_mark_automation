@@ -287,161 +287,107 @@ export default function AttainmentDashboard() {
                         </p>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="bg-gray-50 border-b-2 border-gray-200">
+                        <table className="w-full text-sm border-collapse border border-gray-300">
+                            <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase w-48">Metric</th>
+                                    <th className="text-left px-2 py-2 text-xs font-bold text-gray-600 border border-gray-300 w-48"></th>
                                     {CO_KEYS.map(co => (
-                                        <th key={co} className="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-center">{co.toUpperCase()}</th>
+                                        <th key={co} className="px-2 py-2 text-xs font-bold text-gray-700 uppercase text-center border border-gray-300 w-16">{co.toUpperCase()}</th>
                                     ))}
+                                    <th className="px-2 py-2 text-xs font-bold text-gray-600 border border-gray-300 w-16"></th>
+                                    <th className="px-2 py-2 text-xs font-bold text-gray-600 border border-gray-300 w-16"></th>
+                                    <th className="px-2 py-2 text-xs font-bold text-gray-600 border border-gray-300 w-16"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="bg-white">
 
-                                {/* ── Section 1: per-assessment Levels ── */}
+                                {/* Course Outcome (IA) */}
                                 <tr>
-                                    <td colSpan={7} className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 border-b border-gray-100">
-                                        Assessment Levels (0–3)
-                                    </td>
+                                    <td className="px-2 py-1.5 text-xs text-gray-800 border border-gray-300">Course Outcome (IA)</td>
+                                    {CO_KEYS.map(co => (
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300">{Math.round(result.coAttainmentAvg?.[co] ?? 0)}</td>
+                                    ))}
+                                    <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300">60%</td>
+                                    <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300 bg-gray-50"></td>
+                                    <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-gray-50"></td>
                                 </tr>
 
-                                {/* CO Average (IA) */}
-                                <tr className="bg-indigo-50/40">
-                                    <td className="px-4 py-3 text-xs font-semibold text-indigo-700">
-                                        CO Average <span className="text-gray-400 font-normal">(IA)</span><br />
-                                        <span className="font-normal text-gray-400">(Int1 + Int2) ÷ 2 → Level</span>
-                                    </td>
-                                    {CO_KEYS.map(co => {
-                                        const lv = result.coAttainmentAvg?.[co] ?? 0;
-                                        return (
-                                            <td key={co} className="px-4 py-3 text-center">
-                                                <span className="font-mono text-xs text-gray-600 block">{lv.toFixed(4)}</span>
-                                                <LevelBadge level={Math.round(lv)} />
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-
-                                {/* Unit Test */}
+                                {/* UNIT TEST */}
                                 <tr>
-                                    <td className="px-4 py-3 text-xs font-semibold text-sky-700">
-                                        Unit Test Level<br />
-                                        <span className="font-normal text-gray-400">% ≥60% → Level</span>
-                                    </td>
-                                    {CO_KEYS.map(co => {
-                                        const lv = result.unitTestLevel?.[co] ?? 0;
-                                        return (
-                                            <td key={co} className="px-4 py-3 text-center">
-                                                <span className="font-mono text-xs text-gray-600 block">{lv.toFixed(4)}</span>
-                                                <LevelBadge level={Math.round(lv)} />
-                                            </td>
-                                        );
-                                    })}
+                                    <td className="px-2 py-1.5 text-xs text-gray-800 border border-gray-300 uppercase">UNIT TEST</td>
+                                    {CO_KEYS.map(co => (
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300">{Math.round(result.unitTestLevel?.[co] ?? 0)}</td>
+                                    ))}
+                                    <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300">15%</td>
+                                    <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300 bg-gray-50"></td>
+                                    <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-gray-50"></td>
                                 </tr>
 
-                                {/* Assignment */}
-                                <tr className="bg-amber-50/40">
-                                    <td className="px-4 py-3 text-xs font-semibold text-amber-700">
-                                        Assignment Level<br />
-                                        <span className="font-normal text-gray-400">% ≥60% → Level</span>
-                                    </td>
-                                    {CO_KEYS.map(co => {
-                                        const lv = result.assignmentLevel?.[co] ?? 0;
-                                        return (
-                                            <td key={co} className="px-4 py-3 text-center">
-                                                <span className="font-mono text-xs text-gray-600 block">{lv.toFixed(4)}</span>
-                                                <LevelBadge level={Math.round(lv)} />
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-
-                                {/* Semester */}
+                                {/* ASSIGNMENT */}
                                 <tr>
-                                    <td className="px-4 py-3 text-xs font-semibold text-teal-700">
-                                        Semester Level <span className="text-gray-400 font-normal">(SEE)</span><br />
-                                        <span className="font-normal text-gray-400">% ≥60% → Level</span>
-                                    </td>
-                                    {CO_KEYS.map(co => {
-                                        const lv = result.semesterLevel?.[co] ?? 0;
-                                        return (
-                                            <td key={co} className="px-4 py-3 text-center">
-                                                <span className="font-mono text-xs text-gray-600 block">{lv.toFixed(4)}</span>
-                                                <LevelBadge level={Math.round(lv)} />
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-
-                                {/* ── Section 2: Calculation Chain ── */}
-                                <tr>
-                                    <td colSpan={7} className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 border-b border-gray-100">
-                                        Attainment Calculation Chain
-                                    </td>
+                                    <td className="px-2 py-1.5 text-xs text-gray-800 border border-gray-300 uppercase">ASSIGNMENT</td>
+                                    {CO_KEYS.map(co => (
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300">{Math.round(result.assignmentLevel?.[co] ?? 0)}</td>
+                                    ))}
+                                    <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300">25%</td>
+                                    <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300 bg-gray-50"></td>
+                                    <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-gray-50"></td>
                                 </tr>
 
                                 {/* Internal */}
-                                <tr className="bg-gray-50/50">
-                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">
-                                        Internal Attainment<br />
-                                        <span className="font-normal text-gray-400">IA×0.60 + UT×0.15 + Asgn×0.25</span>
-                                    </td>
+                                <tr className="bg-[#feff00]">
+                                    <td className="px-2 py-1.5 text-xs text-gray-900 border border-gray-400">Internal</td>
                                     {CO_KEYS.map(co => (
-                                        <td key={co} className="px-4 py-3 text-center font-mono font-semibold text-gray-800">
-                                            {result.internalAttainment[co].toFixed(4)}
-                                        </td>
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs text-gray-900 border border-gray-400">{Number(result.internalAttainment[co].toFixed(2))}</td>
                                     ))}
+                                    <td className="px-2 py-1.5 text-center text-xs text-gray-900 border border-gray-400 bg-white">100%</td>
+                                    <td className="px-2 py-1.5 text-center text-xs font-bold text-gray-900 border border-gray-400">40%</td>
+                                    <td className="px-2 py-1.5 text-center text-xs bg-white border border-gray-400"></td>
                                 </tr>
 
-                                {/* Direct */}
-                                <tr className="bg-blue-50/30">
-                                    <td className="px-4 py-3 text-xs font-semibold text-blue-700">
-                                        Direct Attainment<br />
-                                        <span className="font-normal text-gray-400">SEE×0.60 + Internal×0.40</span>
-                                    </td>
+                                {/* SEE */}
+                                <tr className="bg-[#00b050] text-black">
+                                    <td className="px-2 py-1.5 text-xs font-medium border border-gray-400">SEE</td>
                                     {CO_KEYS.map(co => (
-                                        <td key={co} className="px-4 py-3 text-center font-mono font-semibold text-blue-700">
-                                            {result.directAttainment[co].toFixed(4)}
-                                        </td>
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs font-medium border border-gray-400">{Math.round(result.semesterLevel?.[co] ?? 0)}</td>
                                     ))}
+                                    <td className="px-2 py-1.5 text-center text-xs border border-gray-400 bg-white text-gray-800"></td>
+                                    <td className="px-2 py-1.5 text-center text-xs font-bold border border-gray-400 bg-[#00b050] text-black">60%</td>
+                                    <td className="px-2 py-1.5 text-center text-xs bg-white text-gray-800 border border-gray-400"></td>
                                 </tr>
 
-                                {/* Indirect */}
-                                <tr>
-                                    <td className="px-4 py-3 text-xs font-semibold text-gray-600">
-                                        Indirect Attainment<br />
-                                        <span className="font-normal text-gray-400">Course-End Survey (0–3)</span>
-                                    </td>
+                                {/* DIRECT ATTAINMENT */}
+                                <tr className="bg-[#92d050]">
+                                    <td className="px-2 py-1.5 text-xs font-medium text-gray-900 border border-gray-400 uppercase">DIRECT ATTAINMENT</td>
                                     {CO_KEYS.map(co => (
-                                        <td key={co} className="px-4 py-3 text-center font-mono text-gray-700">
-                                            {result.indirectAttainment[co].toFixed(2)}
-                                        </td>
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs font-medium border border-gray-400">{Number(result.directAttainment[co].toFixed(2))}</td>
                                     ))}
+                                    <td className="px-2 py-1.5 text-center text-xs border border-gray-400 bg-white"></td>
+                                    <td className="px-2 py-1.5 text-center text-xs border border-gray-400 bg-white"></td>
+                                    <td className="px-2 py-1.5 text-center text-xs font-bold text-gray-900 border border-gray-400">90%</td>
                                 </tr>
 
-                                {/* Final */}
-                                <tr className="bg-violet-50/50">
-                                    <td className="px-4 py-3 text-xs font-bold text-violet-700">
-                                        Final Attainment<br />
-                                        <span className="font-normal text-gray-400">Direct×0.90 + Indirect×0.10</span>
-                                    </td>
+                                {/* Indirect Attainment */}
+                                <tr className="bg-gray-50">
+                                    <td className="px-2 py-1.5 text-xs text-gray-800 border border-gray-300">Indirect Attainment</td>
                                     {CO_KEYS.map(co => (
-                                        <td key={co} className="px-4 py-3 text-center font-mono font-bold text-violet-800 text-base">
-                                            {result.finalAttainment[co].toFixed(4)}
-                                        </td>
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300 bg-white">{Number(result.indirectAttainment[co].toFixed(2))}</td>
                                     ))}
+                                    <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-white"></td>
+                                    <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-white"></td>
+                                    <td className="px-2 py-1.5 text-center text-xs text-gray-900 border border-gray-300 bg-gray-50">10%</td>
                                 </tr>
 
-                                {/* Attainment Level */}
-                                <tr className="bg-violet-100/60 border-t-2 border-violet-200">
-                                    <td className="px-4 py-3 text-xs font-bold text-violet-800">Attainment Level</td>
+                                {/* Final Attainment */}
+                                <tr className="bg-gray-50">
+                                    <td className="px-2 py-1.5 text-xs font-bold text-gray-900 border border-gray-300">Final Attainment</td>
                                     {CO_KEYS.map(co => (
-                                        <td key={co} className="px-4 py-3 text-center">
-                                            <LevelBadge level={result.levels[co]} />
-                                        </td>
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs font-bold text-gray-900 border border-gray-300 bg-white">{Number(result.finalAttainment[co].toFixed(2))}</td>
                                     ))}
+                                    <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-white"></td>
+                                    <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-white"></td>
+                                    <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-white"></td>
                                 </tr>
-
                             </tbody>
                         </table>
                     </div>
