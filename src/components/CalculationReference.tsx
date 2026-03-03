@@ -143,6 +143,19 @@ export default function CalculationReference({ questionConfig }: CalculationRefe
                                 <li><span className="font-bold text-red-600">Level 0:</span> &lt; 40% of students scored above target.</li>
                             </ul>
                         </div>
+
+                        <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-200">
+                            <h4 className="font-semibold text-blue-900 mb-2">CO Average Thresholds (Direct Template Upload Strategy)</h4>
+                            <p className="text-sm text-gray-600 mb-2">
+                                When using the <strong>CO Average</strong> template upload, interpretation follows fixed percentages:
+                            </p>
+                            <ul className="text-sm text-gray-600 space-y-1 ml-4 list-disc">
+                                <li><span className="font-bold text-emerald-600">Level 3 (High):</span> Student CO Average ≥ 80%</li>
+                                <li><span className="font-bold text-yellow-600">Level 2 (Medium):</span> Student CO Average ≥ 70% and &lt; 80%</li>
+                                <li><span className="font-bold text-orange-600">Level 1 (Low):</span> Student CO Average ≥ 60% and &lt; 70%</li>
+                                <li><span className="font-bold text-red-600">Level 0:</span> Student CO Average &lt; 60%</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>

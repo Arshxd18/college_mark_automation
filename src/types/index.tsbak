@@ -24,8 +24,7 @@ export type TestType =
   | "Internal 2"
   | "Semester"
   | "Unit Test"
-  | "Assignment"
-  | "CO Average";
+  | "Assignment";
 
 export interface ExamConfig {
   academicYear: string;

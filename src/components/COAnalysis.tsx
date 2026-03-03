@@ -154,7 +154,7 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                                     </td>
                                     {CO_LABELS.map(co => (
                                         <td key={co} className="p-3 border-r border-indigo-50 text-center text-gray-600">
-                                            {s.results[co] || "-"}
+                                            {s.results[co] !== undefined ? s.results[co] : "-"}
                                         </td>
                                     ))}
 
@@ -168,9 +168,9 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                                                     "px-2.5 py-1 rounded-md text-xs font-bold shadow-sm",
                                                     rawPct >= 60 ? "bg-green-100 text-green-700 border border-green-200" :
                                                         rawPct >= 40 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" :
-                                                            rawPct > 0 ? "bg-red-100 text-red-700 border border-red-200" : "text-gray-300"
+                                                            rawPct >= 0 ? "bg-red-100 text-red-700 border border-red-200" : "text-gray-300"
                                                 )}>
-                                                    {displayPct > 0 ? `${displayPct}` : "-"}
+                                                    {displayPct >= 0 ? `${displayPct}` : "-"}
                                                 </span>
                                             </td>
                                         );

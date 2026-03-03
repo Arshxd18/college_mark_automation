@@ -29,6 +29,8 @@ export const parseExcelUpload = async (file: File, testType: string = "Internal 
                     result = parseAssignment(json, testType);
                 } else if (testType === "Semester") {
                     result = parseSemester(json, testType);
+                } else if (testType === "CO Average") {
+                    result = parseCoAverage(json, testType);
                 } else {
                     result = parseInternal(json, testType);
                 }
@@ -312,4 +314,62 @@ function parseInternal(json: any[][], testType: string): ParsedUploadData {
     }
 
     return { academicYear: "2023-2024", testType, questionConfig: qConfig, students, headers };
+}
+
+function parseCoAverage(json: any[][], testType: string): ParsedUploadData {
+    const qConfig: QuestionConfig = {};
+    const students: any[] = [];
+
+    // In coaverage_template, CO1 to CO6 map to columns 4 through 9 (indices 4 to 9).
+    // The values there are ALREADY percentages (0-100).
+    // We treat each as a question with max=100, so the engine computes `(val/100)*100 = val`.
+    ["co1", "co2", "co3", "co4", "co5", "co6"].forEach((co, idx) => {
+        qConfig[`coavg_${co}`] = { maxMark: 100, co: co as COLabel };
+    });
+
+    // Determine row where data starts. Row 0 has "S.NO", "REG.NO", "ROLL.NO", "NAME", "INTERNAL COs %"
+    let headerRowIndex = 0;
+    while (headerRowIndex < json.length && (!json[headerRowIndex] || !json[headerRowIndex][1] || typeof json[headerRowIndex][1] !== 'string' || !json[headerRowIndex][1].toUpperCase().includes('REG'))) {
+        headerRowIndex++;
+    }
+
+    // Students start roughly from Row 6 (index 5) depending on header length, or after the header row.
+    const startIndex = headerRowIndex !== json.length ? headerRowIndex + 1 : 1;
+
+    for (let i = startIndex; i < json.length; i++) {
+        const row = json[i];
+        if (!row || !Array.isArray(row)) continue;
+
+        // Skip summary rows at the bottom
+        if (typeof row[0] === 'string' && (row[0].toLowerCase().includes('s.no') || row[0].toLowerCase().includes('attainment') || row[0].toLowerCase().includes('no of students'))) continue;
+        if (typeof row[5] === 'string' && (row[5].toLowerCase().includes('attainment level') || row[5].toLowerCase().includes('no. of studetns'))) continue;
+
+        const regNo = row[1];
+        const name = row[3] || row[2]; // Sometimes name is in Col 3, sometimes Col 2 depending on if ROLL.NO exists
+
+        // Need strings for regNo and name to consider it a valid student row
+        if (!regNo || regNo === "" || typeof regNo === 'object') continue;
+
+        const student: any = {
+            slNo: students.length + 1,
+            regNo: String(regNo),
+            name: String(name || "Unknown"),
+            marks: {}
+        };
+
+        // Columns 4 to 9 map to CO1 to CO6
+        ["co1", "co2", "co3", "co4", "co5", "co6"].forEach((co, idx) => {
+            const mark = row[4 + idx];
+            if (mark !== undefined && mark !== null && mark !== "") {
+                student.marks[`coavg_${co}`] = Number(mark);
+            }
+        });
+
+        // Only add student if they have at least one CO calculated
+        if (Object.keys(student.marks).length > 0) {
+            students.push(student);
+        }
+    }
+
+    return { academicYear: "2023-2024", testType, questionConfig: qConfig, students, headers: ["REG.NO", "NAME"] };
 }

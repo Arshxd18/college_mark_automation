@@ -12,6 +12,7 @@ const TEST_TYPES = [
     "Semester",
     "Unit Test",
     "Assignment",
+    "CO Average",
 ] as const;
 
 interface SetupSectionProps {
