@@ -13,7 +13,7 @@ interface COAnalysisProps {
 
 // Weight multipliers for display — these match the contribution each test type has to Internal Attainment
 const WEIGHT_BY_TYPE: Record<string, number> = {
-    "Assignment": 0.25,
+    "CO Average": 0.25,
     "Unit Test": 0.15,
     "Internal 1": 1,
     "Internal 2": 1,

@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 const CO_KEYS: (keyof COScores)[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
-const TEST_TYPES: TestType[] = ["Internal 1", "Internal 2", "Semester", "Unit Test", "Assignment"];
+const TEST_TYPES: TestType[] = ["Internal 1", "Internal 2", "Semester", "Unit Test", "Assignment", "CO Average"];
 
 const LEVEL_COLORS = ["bg-red-100 text-red-700", "bg-orange-100 text-orange-700", "bg-yellow-100 text-yellow-700", "bg-emerald-100 text-emerald-700"];
 const LEVEL_LABELS = ["L0", "L1", "L2", "L3"];

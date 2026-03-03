@@ -1,0 +1,250 @@
+"use client";
+
+import React from "react";
+import { ExamConfig, QuestionConfig, COLabel } from "@/types";
+import { ChevronDown, ChevronUp, Settings, Upload, CloudUpload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+
+const CO_OPTIONS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
+
+const TEST_TYPES = [
+    "Internal 1",
+    "Internal 2",
+    "Semester",
+    "Unit Test",
+    "Assignment",
+] as const;
+
+interface SetupSectionProps {
+    examConfig: ExamConfig;
+    setExamConfig: (config: ExamConfig) => void;
+    questionConfig: QuestionConfig;
+    setQuestionConfig: (config: QuestionConfig) => void;
+    isOpen: boolean;
+    onToggle: () => void;
+    onReset: () => void;
+    onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    uploadStatus: "idle" | "uploading" | "success" | "error";
+    uploadError: string;
+    onSaveToFirebase: () => void;
+    saveStatus: "idle" | "saving" | "success" | "error";
+}
+
+export default function SetupSection({
+    examConfig,
+    setExamConfig,
+    questionConfig,
+    setQuestionConfig,
+    isOpen,
+    onToggle,
+    onReset,
+    onFileUpload,
+    uploadStatus,
+    uploadError,
+    onSaveToFirebase,
+    saveStatus,
+}: SetupSectionProps) {
+
+    const handleQuestionConfigChange = (qId: string, field: "co" | "maxMark", value: any) => {
+        setQuestionConfig({
+            ...questionConfig,
+            [qId]: {
+                ...questionConfig[qId],
+                [field]: field === "maxMark" ? Number(value) : value,
+            },
+        });
+    };
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+            <button
+                onClick={onToggle}
+                className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+                <div className="flex items-center gap-2">
+                    <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+                        <Settings className="w-5 h-5" />
+                    </div>
+                    <div className="text-left">
+                        <h2 className="text-lg font-semibold text-gray-900">Assessment Setup</h2>
+                        <p className="text-xs text-gray-500">Configure exam details and CO mappings</p>
+                    </div>
+                </div>
+                {isOpen ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+            </button>
+
+            {isOpen && (
+                <div className="p-6 space-y-8 animate-in slide-in-from-top-4 fade-in duration-300">
+
+                    {/* Exam Configuration */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {/* Academic Year */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
+                            <input
+                                type="text"
+                                value={examConfig.academicYear}
+                                onChange={(e) => setExamConfig({ ...examConfig, academicYear: e.target.value })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="2025-2026"
+                            />
+                        </div>
+
+                        {/* Batch Year */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Batch Year</label>
+                            <input
+                                type="text"
+                                value={examConfig.batchYear}
+                                onChange={(e) => setExamConfig({ ...examConfig, batchYear: e.target.value })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="2023-2027"
+                            />
+                        </div>
+
+                        {/* Subject ID */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Subject ID</label>
+                            <input
+                                type="text"
+                                value={examConfig.subjectId}
+                                onChange={(e) => setExamConfig({ ...examConfig, subjectId: e.target.value })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="e.g. 23AD1501"
+                            />
+                        </div>
+
+                        {/* Test Type */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Test Type</label>
+                            <select
+                                value={examConfig.testType}
+                                onChange={(e) => setExamConfig({ ...examConfig, testType: e.target.value as any })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                            >
+                                {TEST_TYPES.map((t) => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-gray-100 my-6"></div>
+
+                    {/* Question Configuration */}
+                    <div>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-md font-semibold text-gray-900">Question Configuration</h3>
+                            <button
+                                onClick={onReset}
+                                className="text-xs text-red-500 hover:text-red-700 underline"
+                            >
+                                Reset to Defaults
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {Object.keys(questionConfig).sort((a, b) => {
+                                const numA = Number(a.match(/\\d+/)?.[0] || 0);
+                                const numB = Number(b.match(/\\d+/)?.[0] || 0);
+                                if (numA !== numB) return numA - numB;
+                                return a.localeCompare(b);
+                            }).map((qId) => (
+                                <div key={qId} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="w-12 text-center font-bold text-gray-700 uppercase">
+                                        {qId}
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-gray-500 uppercase font-bold w-6">Max</span>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={questionConfig[qId]?.maxMark}
+                                                onChange={(e) => handleQuestionConfigChange(qId, "maxMark", e.target.value)}
+                                                className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500"
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-gray-500 uppercase font-bold w-6">CO</span>
+                                            <select
+                                                value={questionConfig[qId]?.co}
+                                                onChange={(e) => handleQuestionConfigChange(qId, "co", e.target.value)}
+                                                className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500 bg-white"
+                                            >
+                                                {CO_OPTIONS.map(co => (
+                                                    <option key={co} value={co}>{co.toUpperCase()}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 pt-6">
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            {/* Hidden File Input */}
+                            <input
+                                type="file"
+                                id="excel-upload"
+                                accept=".xlsx"
+                                className="hidden"
+                                onChange={onFileUpload}
+                            />
+
+                            <label
+                                htmlFor="excel-upload"
+                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer w-full sm:w-auto 
+                                    ${uploadStatus === "uploading" ? "bg-indigo-100 text-indigo-400 cursor-not-allowed" :
+                                        uploadStatus === "success" ? "bg-green-100 text-green-700" :
+                                            "bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50"}`}
+                            >
+                                {uploadStatus === "uploading" ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                                    uploadStatus === "success" ? <CheckCircle className="w-4 h-4" /> :
+                                        <Upload className="w-4 h-4" />}
+                                {uploadStatus === "uploading" ? "Uploading..." :
+                                    uploadStatus === "success" ? "Uploaded!" :
+                                        "Upload Assessment Tracker"}
+                            </label>
+
+                            {uploadError && (
+                                <span className="text-xs text-red-500 font-medium flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" /> Failed
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <button
+                                onClick={onSaveToFirebase}
+                                disabled={saveStatus === "saving"}
+                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto 
+                                    ${saveStatus === "saving" ? "bg-violet-400 text-white cursor-not-allowed" :
+                                        saveStatus === "success" ? "bg-emerald-600 text-white" :
+                                            saveStatus === "error" ? "bg-red-600 text-white" :
+                                                "bg-violet-600 text-white hover:bg-violet-700 shadow-sm"}`}
+                            >
+                                {saveStatus === "saving" ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                                    saveStatus === "success" ? <CheckCircle className="w-4 h-4" /> :
+                                        saveStatus === "error" ? <AlertCircle className="w-4 h-4" /> :
+                                            <CloudUpload className="w-4 h-4" />}
+                                {saveStatus === "saving" ? "Saving..." :
+                                    saveStatus === "success" ? "Saved!" :
+                                        "Save Data to Firebase"}
+                            </button>
+
+                            <button
+                                onClick={onToggle}
+                                className="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors hidden sm:block"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            )}
+        </div>
+    );
+}
