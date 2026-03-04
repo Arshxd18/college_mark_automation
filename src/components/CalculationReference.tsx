@@ -145,9 +145,6 @@ export default function CalculationReference({ questionConfig }: CalculationRefe
                                 <li><span className="font-bold text-orange-600">Level 1 (Low):</span> 60% - 69% of students scored ≥ 60%</li>
                                 <li><span className="font-bold text-red-600">Level 0:</span> &lt; 60% of students scored ≥ 60%</li>
                             </ul>
-                            <p className="text-xs text-gray-500 mt-2 italic">
-                                Note: For CO Average direct template uploads, this threshold applies directly to the student's raw percentage.
-                            </p>
                         </div>
                     </div>
                 </div>

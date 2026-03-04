@@ -127,6 +127,7 @@ export default function UploadAnalyzer() {
                             <option value="Unit Test">Unit Test (20 marks per unit)</option>
                             <option value="Assignment">Assignment (6 COs, 10 marks each)</option>
                             <option value="Semester">Semester</option>
+                            <option value="CO Average">CO Average (Direct Template Upload)</option>
                         </select>
                     </div>
 
