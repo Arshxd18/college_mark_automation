@@ -14,7 +14,7 @@ console.dir(json.slice(0, 10), { depth: null });
 
 let headerRowIndex = 0;
 while (headerRowIndex < json.length) {
-    const row = json[headerRowIndex];
+    const row = json[headerRowIndex] as any[];
     if (row && row[1] && typeof row[1] === 'string' && row[1].toUpperCase().includes('REG')) {
         break;
     }
@@ -23,10 +23,10 @@ while (headerRowIndex < json.length) {
 console.log("Header row index:", headerRowIndex);
 
 const startIndex = headerRowIndex !== json.length ? headerRowIndex + 1 : 1;
-const totals = { co1: [], co2: [], co3: [], co4: [], co5: [], co6: [] };
+const totals: Record<string, number[]> = { co1: [], co2: [], co3: [], co4: [], co5: [], co6: [] };
 
 for (let i = startIndex; i < json.length; i++) {
-    const row = json[i];
+    const row = json[i] as any[];
     if (!row || !Array.isArray(row)) continue;
     if (typeof row[0] === 'string' && (row[0].toLowerCase().includes('s.no') || row[0].toLowerCase().includes('attainment') || row[0].toLowerCase().includes('no of students'))) continue;
     if (typeof row[5] === 'string' && (row[5].toLowerCase().includes('attainment level') || row[5].toLowerCase().includes('no. of studetns'))) continue;
@@ -42,11 +42,11 @@ for (let i = startIndex; i < json.length; i++) {
     });
 }
 
-const levels = {};
+const levels: Record<string, any> = {};
 ["co1", "co2", "co3", "co4", "co5", "co6"].forEach((co) => {
-    const vals = totals[co];
+    const vals = totals[co] || [];
     const attended = vals.length;
-    const scoring60 = vals.filter(v => v >= 60).length;
+    const scoring60 = vals.filter((v: number) => v >= 60).length;
     const pct = attended > 0 ? (scoring60 / attended) * 100 : 0;
 
     let level = 0;

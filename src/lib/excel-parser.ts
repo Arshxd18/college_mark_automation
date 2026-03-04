@@ -23,6 +23,11 @@ export const parseExcelUpload = async (file: File, testType: string = "Internal 
 
                 let result: ParsedUploadData;
 
+                // Auto-detect template types if the user forgot to select the correct one
+                if (json[0] && json[0].includes("INTERNAL COs %")) {
+                    testType = "CO Average";
+                }
+
                 if (testType === "Unit Test") {
                     result = parseUnitTest(json, testType);
                 } else if (testType === "Assignment") {
