@@ -135,26 +135,19 @@ export default function CalculationReference({ questionConfig }: CalculationRefe
                         </div>
 
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                            <h4 className="font-semibold text-gray-800 mb-2">Level Thresholds</h4>
-                            <ul className="text-sm text-gray-600 space-y-1">
-                                <li><span className="font-bold text-emerald-600">Level 3 (High):</span> ≥ 60% of students scored above target.</li>
-                                <li><span className="font-bold text-yellow-600">Level 2 (Medium):</span> 50% - 59% of students scored above target.</li>
-                                <li><span className="font-bold text-orange-600">Level 1 (Low):</span> 40% - 49% of students scored above target.</li>
-                                <li><span className="font-bold text-red-600">Level 0:</span> &lt; 40% of students scored above target.</li>
-                            </ul>
-                        </div>
-
-                        <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-200">
-                            <h4 className="font-semibold text-blue-900 mb-2">CO Average Thresholds (Direct Template Upload Strategy)</h4>
+                            <h4 className="font-semibold text-gray-800 mb-2">Universal Attainment Level Thresholds</h4>
                             <p className="text-sm text-gray-600 mb-2">
-                                When using the <strong>CO Average</strong> template upload, interpretation follows fixed percentages:
+                                For all assessments, the percentage of students scoring ≥ 60% dictates the attainment level:
                             </p>
                             <ul className="text-sm text-gray-600 space-y-1 ml-4 list-disc">
-                                <li><span className="font-bold text-emerald-600">Level 3 (High):</span> Student CO Average ≥ 80%</li>
-                                <li><span className="font-bold text-yellow-600">Level 2 (Medium):</span> Student CO Average ≥ 70% and &lt; 80%</li>
-                                <li><span className="font-bold text-orange-600">Level 1 (Low):</span> Student CO Average ≥ 60% and &lt; 70%</li>
-                                <li><span className="font-bold text-red-600">Level 0:</span> Student CO Average &lt; 60%</li>
+                                <li><span className="font-bold text-emerald-600">Level 3 (High):</span> ≥ 80% of students scored ≥ 60%</li>
+                                <li><span className="font-bold text-yellow-600">Level 2 (Medium):</span> 70% - 79% of students scored ≥ 60%</li>
+                                <li><span className="font-bold text-orange-600">Level 1 (Low):</span> 60% - 69% of students scored ≥ 60%</li>
+                                <li><span className="font-bold text-red-600">Level 0:</span> &lt; 60% of students scored ≥ 60%</li>
                             </ul>
+                            <p className="text-xs text-gray-500 mt-2 italic">
+                                Note: For CO Average direct template uploads, this threshold applies directly to the student's raw percentage.
+                            </p>
                         </div>
                     </div>
                 </div>

@@ -29,9 +29,9 @@ export interface ComputedAssessment {
  *   else   → Level 0
  */
 export function getAttainmentLevel(pct: number): number {
-    if (pct > 70) return 3;
-    if (pct >= 60) return 2;
-    if (pct >= 50) return 1;
+    if (pct >= 80) return 3;
+    if (pct >= 70) return 2;
+    if (pct >= 60) return 1;
     return 0;
 }
 
@@ -57,7 +57,7 @@ export function getCOAvgAttainmentLevel(pct: number): number {
  * including level (0-3) for each CO.
  *
  * Used for: Unit Test, Assignment, Semester, Internal 1, Internal 2.
- * Level thresholds: >70→L3, ≥60→L2, ≥50→L1, else L0.
+ * Level thresholds: ≥80→L3, ≥70→L2, ≥60→L1, else L0.
  */
 export function computeAssessmentCO(
     students: Student[],
@@ -96,7 +96,7 @@ export function computeAssessmentCO(
             const attended = vals.length;
             const scoring60 = vals.filter(v => v >= THRESHOLD).length;
             const pct = attended > 0 ? parseFloat(((scoring60 / attended) * 100).toFixed(2)) : 0;
-            const level = testType === "CO Average" ? getCOAvgAttainmentLevel(pct) : getAttainmentLevel(pct);
+            const level = getAttainmentLevel(pct);
             attainment[co] = { attended, scoring60, pct, level };
         }
     }

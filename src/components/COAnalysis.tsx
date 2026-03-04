@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import { Student, QuestionConfig, TestType } from "@/types";
 import { calculateCOAttainment, getPartWiseTotals, calculateCOMaxMarks } from "@/lib/calculations";
+import { computeAssessmentCO } from "@/lib/attainmentEngine";
 import { cn } from "@/lib/utils";
 
 interface COAnalysisProps {
@@ -42,6 +43,10 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
             results: calculateCOAttainment(student.marks, questionConfig)
         }));
     }, [students, questionConfig]);
+
+    const { attainment } = useMemo(() => {
+        return computeAssessmentCO(students, questionConfig, testType);
+    }, [students, questionConfig, testType]);
 
     const CO_LABELS = ["co1", "co2", "co3", "co4", "co5", "co6"] as const;
 
@@ -180,6 +185,45 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                                     </td>
                                 </tr>
                             ))}
+
+                            {/* Attainment Summary Rows */}
+                            <tr>
+                                <td colSpan={2} className="p-3 border-r border-indigo-50 font-semibold bg-gray-50/50 sticky left-0 text-gray-700">No of Students Attended</td>
+                                {CO_LABELS.map(co => (
+                                    <td key={co} className="p-3 border-r border-indigo-50 text-center text-sm font-medium bg-gray-50/50">
+                                        {attainment[co]?.level !== "N/A" ? attainment[co].attended : "-"}
+                                    </td>
+                                ))}
+                                <td colSpan={7} className="bg-gray-50/50"></td>
+                            </tr>
+                            <tr>
+                                <td colSpan={2} className="p-3 border-r border-indigo-50 font-semibold bg-gray-50/50 sticky left-0 text-gray-700">No. of Students Scoring &ge;60%</td>
+                                {CO_LABELS.map(co => (
+                                    <td key={co} className="p-3 border-r border-indigo-50 text-center text-sm font-medium bg-gray-50/50">
+                                        {attainment[co]?.level !== "N/A" ? attainment[co].scoring60 : "-"}
+                                    </td>
+                                ))}
+                                <td colSpan={7} className="bg-gray-50/50"></td>
+                            </tr>
+                            <tr>
+                                <td colSpan={2} className="p-3 border-r border-indigo-50 font-semibold bg-gray-50/50 sticky left-0 text-gray-700">% of Students Scoring &ge;60%</td>
+                                {CO_LABELS.map(co => (
+                                    <td key={co} className="p-3 border-r border-indigo-50 text-center text-sm font-medium bg-gray-50/50">
+                                        {attainment[co]?.level !== "N/A" ? attainment[co].pct : "-"}
+                                    </td>
+                                ))}
+                                <td colSpan={7} className="bg-gray-50/50"></td>
+                            </tr>
+                            <tr>
+                                <td colSpan={2} className="p-3 border-r border-indigo-50 font-semibold bg-indigo-100/50 sticky left-0 text-indigo-900">Attainment Level</td>
+                                {CO_LABELS.map(co => (
+                                    <td key={co} className="p-3 border-r border-indigo-50 text-center text-sm font-bold bg-indigo-100/50 text-indigo-700">
+                                        {attainment[co]?.level !== "N/A" ? attainment[co].level : "N/A"}
+                                    </td>
+                                ))}
+                                <td colSpan={7} className="bg-indigo-100/50"></td>
+                            </tr>
+
                         </tbody>
                     </table>
                 </div>
