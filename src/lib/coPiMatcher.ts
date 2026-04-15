@@ -84,7 +84,22 @@ function matchPair(
         boost = Math.min(rawBoost, 0.20);
     }
 
-    const finalScore = parseFloat((baseScore + boost).toFixed(4));
+    // Edge Case 1: Short CO logic compensation
+    // If faculty enter severely brief descriptions, the Euclidean similarity vector shrinks. Softly compensate.
+    if (coText.length > 0 && coText.length < 25) {
+        boost += 0.05;
+    }
+
+    // Edge Case 2: Broad/Generic suppression
+    // If the intersection is purely generic words, artificially suppress the match to demand higher academic specificity
+    const GENERIC_WORDS = ["system", "model", "process", "method", "basic", "concept"];
+    const containsMostlyGeneric = commonTokens.length > 0 && commonTokens.every(t => GENERIC_WORDS.includes(t));
+    if (containsMostlyGeneric && baseScore < 0.15) {
+        boost -= 0.05;
+    }
+
+    let finalScore = parseFloat((baseScore + boost).toFixed(4));
+    if (finalScore < 0) finalScore = 0;
 
     // Matched raw words for tooltip (before stemming)
     const matchedWords = getMatchedWords(coText, piText);
