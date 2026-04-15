@@ -101,6 +101,45 @@ export interface AttainmentResult {
   computedAt: string;
 }
 
+// ── CO–PO–PSO Mapping Types ──────────────────────────────────────
+
+export interface PIEntry {
+  id: string;           // e.g. "PI-1.1.1"
+  competency: string;   // e.g. "Engineering Knowledge"
+  descriptor: string;   // Full PI text description
+  poNumber: number;     // PO number this PI belongs to (1–12)
+}
+
+export type MappingDecision = "YES" | "LOW_CONFIDENCE" | "NO";
+
+export interface MappingCell {
+  value: MappingDecision;
+  confidence: number;       // 0–1 final NLP score
+  matchedWords: string[];   // common tokens shown in tooltip
+  overridden: boolean;      // true if faculty manually toggled
+}
+
+export interface PIAttainmentRow {
+  piId: string;
+  competency: string;
+  attainedScore: number;  // sum of confidence for YES cells
+  total: number;          // always 6
+  pct: number;
+  level: number;          // 0–3
+}
+
+export interface COMappingDoc {
+  id?: string;
+  batchYear: string;
+  subjectId: string;
+  coDescriptions: Record<COLabel, string>;
+  matrix: Record<COLabel, Record<string, MappingCell>>;
+  piAttainment: PIAttainmentRow[];
+  savedAt: string;
+}
+
+
+
 // Default values to initialize the system
 export const DEFAULT_QUESTION_CONFIG: QuestionConfig = {
   q1: { co: "co2", maxMark: 2 },

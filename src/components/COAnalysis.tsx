@@ -186,7 +186,8 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                                 </tr>
                             ))}
 
-                            {/* Attainment Summary Rows */}
+                            {/* Attainment Summary Rows — CO Average only */}
+                            {testType === "CO Average" && (<>
                             <tr>
                                 <td colSpan={2} className="p-3 border-r border-indigo-50 font-semibold bg-gray-50/50 sticky left-0 text-gray-700">No of Students Attended</td>
                                 {CO_LABELS.map(co => (
@@ -223,6 +224,7 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                                 ))}
                                 <td colSpan={7} className="bg-indigo-100/50"></td>
                             </tr>
+                            </>)}
 
                         </tbody>
                     </table>

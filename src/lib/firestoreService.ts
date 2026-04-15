@@ -18,6 +18,7 @@ import {
     TestType,
     ExamConfig,
     COLabel,
+    COMappingDoc,
 } from "@/types";
 import { computeAssessmentCO } from "./attainmentEngine";
 
@@ -135,5 +136,26 @@ export async function getAttainmentResult(
     const id = resultDocId(batchYear, subjectId);
     const snap = await getDoc(doc(attainmentResultsCol, id));
     if (snap.exists()) return snap.data() as AttainmentResult;
+    return null;
+}
+
+// ── CO–PO–PSO Mapping ──────────────────────────────────────────
+
+const mappingsCol = collection(db, "mappings");
+
+export async function saveCOMapping(mappingDoc: COMappingDoc): Promise<string> {
+    const id = resultDocId(mappingDoc.batchYear, mappingDoc.subjectId);
+    const ref = doc(mappingsCol, id);
+    await setDoc(ref, { ...mappingDoc, savedAt: new Date().toISOString() });
+    return id;
+}
+
+export async function getCOMapping(
+    batchYear: string,
+    subjectId: string
+): Promise<COMappingDoc | null> {
+    const id = resultDocId(batchYear, subjectId);
+    const snap = await getDoc(doc(mappingsCol, id));
+    if (snap.exists()) return { id: snap.id, ...snap.data() } as COMappingDoc;
     return null;
 }
