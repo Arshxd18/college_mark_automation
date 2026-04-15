@@ -193,11 +193,12 @@ export function matchAllCOs(
 // ── PO Attainment Computation ───────────────────────────────────
 
 function computePILevel(piRow: (number | null)[]): number | null {
-    const valid = piRow.filter(v => v !== null);
+    const valid = piRow.filter(v => v !== null) as number[];
     if (valid.length === 0) return null;
 
-    const attained = valid.filter((v: any) => v >= 1).length;
-    const pct = (attained / valid.length) * 100;
+    const attained = valid.reduce((a, b) => a + b, 0);
+    const max = valid.length * 3;
+    const pct = (attained / max) * 100;
 
     if (pct >= 70) return 3;
     if (pct >= 60) return 2;
