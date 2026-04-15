@@ -166,19 +166,20 @@ export function computePIAttainment(
     const rows: PIAttainmentRow[] = [];
     if (filledCOsCount === 0) return rows;
 
-    const total = filledCOsCount * 3;
-
     for (const pi of piList) {
         let attainedScore = 0;
+        let validMapped = 0;
 
         for (const co of CO_KEYS) {
             const cell = matrix[co]?.[pi.id];
             if (cell && cell.value !== null) {
                 attainedScore += cell.value;
+                validMapped++;
             }
         }
 
-        const pct = parseFloat(((attainedScore / total) * 100).toFixed(2));
+        const total = validMapped * 3;
+        const pct = total === 0 ? 0 : parseFloat(((attainedScore / total) * 100).toFixed(2));
 
         let level = 0;
         if (pct >= 70) level = 3;

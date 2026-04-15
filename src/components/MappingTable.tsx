@@ -355,6 +355,29 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                                                         ))}
                                                     </tr>
                                                 ))}
+                                                {/* FINAL AVG ROW FOR PO */}
+                                                <tr className="bg-indigo-50/50 border-t-2 border-indigo-100">
+                                                    <td colSpan={2} className="p-3 text-right text-xs font-bold text-indigo-800 uppercase tracking-wider border-r border-indigo-100">
+                                                        PO Average
+                                                    </td>
+                                                    {CO_KEYS.map(co => {
+                                                        let sum = 0;
+                                                        let count = 0;
+                                                        for (const pi of pisInPO) {
+                                                            const cell = matrix[co]?.[pi.id];
+                                                            if (cell && cell.value !== null) {
+                                                                sum += cell.value;
+                                                                count++;
+                                                            }
+                                                        }
+                                                        const avg = count > 0 ? (sum / count).toFixed(2) : "-";
+                                                        return (
+                                                            <td key={co} className="p-3 text-center text-xs font-bold text-indigo-800 bg-indigo-50/80 border-l border-indigo-100 shadow-sm">
+                                                                {avg}
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
