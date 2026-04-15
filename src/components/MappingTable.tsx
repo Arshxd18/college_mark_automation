@@ -421,7 +421,7 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                             <tr>
                                 {poAttainment.map(row => (
                                     <th key={row.poId} className="border-r border-gray-200 px-4 py-3 font-semibold text-gray-700 whitespace-nowrap">
-                                        {row.poId > "12" ? `PSO${parseInt(row.poId) - 12}` : `PO${row.poId}`}
+                                        {Number(row.poId) > 12 ? `PSO${Number(row.poId) - 12}` : `PO${row.poId}`}
                                     </th>
                                 ))}
                             </tr>

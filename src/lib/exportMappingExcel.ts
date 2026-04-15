@@ -104,7 +104,7 @@ export async function exportMappingToExcel(
     const attSheet = workbook.addWorksheet("PO Summary");
     
     // Header Row
-    const headerRow = attSheet.addRow(poAttainment.map(r => r.poId > "12" ? `PSO${parseInt(r.poId) - 12}` : `PO${r.poId}`));
+    const headerRow = attSheet.addRow(poAttainment.map(r => Number(r.poId) > 12 ? `PSO${Number(r.poId) - 12}` : `PO${r.poId}`));
     headerRow.eachCell(cell => {
         cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4F46E5" } };
