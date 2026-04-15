@@ -10,7 +10,7 @@
  *   5. Decision: ≥0.6 → YES, ≥0.4 → LOW_CONFIDENCE, <0.4 → NO
  */
 
-import { PIEntry, MappingCell, MappingDecision, COLabel, PIAttainmentRow, COMappingDoc, MappingDecision as MD } from "@/types";
+import { PIEntry, MappingCell, MappingDecision, COLabel, PIAttainmentRow } from "@/types";
 import {
     processText,
     buildIDF,
@@ -143,13 +143,15 @@ export function computePIAttainment(
 
     for (const pi of piList) {
         let attainedScore = 0;
-        let yesCount = 0;
 
         for (const co of CO_KEYS) {
             const cell = matrix[co]?.[pi.id];
-            if (cell && cell.value === "YES") {
+            if (!cell) continue;
+            // YES  → full confidence,  LOW_CONFIDENCE → half confidence,  NO → 0
+            if (cell.value === "YES") {
                 attainedScore += cell.confidence;
-                yesCount++;
+            } else if (cell.value === "LOW_CONFIDENCE") {
+                attainedScore += cell.confidence * 0.5;
             }
         }
 

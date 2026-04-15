@@ -143,19 +143,46 @@ export async function getAttainmentResult(
 
 const mappingsCol = collection(db, "mappings");
 
+/**
+ * Save a CO mapping. Deactivates any previous active mapping for the same
+ * batch+subject (keeps full history). New doc gets isActive:true.
+ */
 export async function saveCOMapping(mappingDoc: COMappingDoc): Promise<string> {
-    const id = resultDocId(mappingDoc.batchYear, mappingDoc.subjectId);
-    const ref = doc(mappingsCol, id);
-    await setDoc(ref, { ...mappingDoc, savedAt: new Date().toISOString() });
-    return id;
+    // Deactivate previous active mappings for this batch+subject
+    const oldQuery = query(
+        mappingsCol,
+        where("batchYear", "==", mappingDoc.batchYear),
+        where("subjectId", "==", mappingDoc.subjectId),
+        where("isActive", "==", true)
+    );
+    const oldDocs = await getDocs(oldQuery);
+    const batch = writeBatch(db);
+    oldDocs.forEach(d => batch.update(d.ref, { isActive: false }));
+    await batch.commit();
+
+    // Write new versioned doc
+    const newRef = doc(mappingsCol);
+    await setDoc(newRef, {
+        ...mappingDoc,
+        isActive: true,
+        savedAt: new Date().toISOString(),
+    });
+    return newRef.id;
 }
 
+/** Get the latest active CO mapping for a batch+subject. */
 export async function getCOMapping(
     batchYear: string,
     subjectId: string
 ): Promise<COMappingDoc | null> {
-    const id = resultDocId(batchYear, subjectId);
-    const snap = await getDoc(doc(mappingsCol, id));
-    if (snap.exists()) return { id: snap.id, ...snap.data() } as COMappingDoc;
-    return null;
+    const q = query(
+        mappingsCol,
+        where("batchYear", "==", batchYear),
+        where("subjectId", "==", subjectId),
+        where("isActive", "==", true)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    return { id: d.id, ...d.data() } as COMappingDoc;
 }

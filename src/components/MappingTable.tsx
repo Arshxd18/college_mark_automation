@@ -4,6 +4,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { Brain, Save, RotateCcw, ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { COLabel, MappingCell, MappingDecision, PIEntry, PIAttainmentRow, COMappingDoc } from "@/types";
 import { matchAllCOs, computePIAttainment, toggleCell, resetOverrides } from "@/lib/coPiMatcher";
+import { getCOWarning } from "@/lib/textProcessor";
 import { DEFAULT_PI_LIST, getPIsByPO } from "@/lib/piData";
 import { saveCOMapping } from "@/lib/firestoreService";
 import { cn } from "@/lib/utils";
@@ -205,6 +206,14 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                                 placeholder={`Describe what students will be able to do in ${CO_LABELS[co]}...`}
                                 className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none bg-gray-50 placeholder:text-gray-300 transition-all"
                             />
+                            {coDescriptions[co].trim() && (() => {
+                                const warn = getCOWarning(coDescriptions[co]);
+                                return warn ? (
+                                    <p className="text-[11px] text-orange-600 flex items-center gap-1">
+                                        <AlertTriangle className="w-3 h-3 flex-shrink-0" />{warn}
+                                    </p>
+                                ) : null;
+                            })()}
                         </div>
                     ))}
                 </div>
