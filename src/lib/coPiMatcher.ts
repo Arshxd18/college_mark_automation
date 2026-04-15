@@ -24,9 +24,9 @@ import {
 const CO_KEYS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
 
 function getMappingLevel(score: number): MappingDecision {
-    if (score >= 0.25) return 3;
-    if (score >= 0.15) return 2;
-    if (score >= 0.08) return 1;
+    if (score >= 0.30) return 3;
+    if (score >= 0.18) return 2;
+    if (score >= 0.10) return 1;
     return null;
 }
 
@@ -59,6 +59,7 @@ function matchPair(
 
     // Weighted final score: academic text is short, keyword overlap (with synonyms) > semantic
     let baseScore = parseFloat(((jaccard * 0.6) + (cosine * 0.4)).toFixed(4));
+    let rawBoost = 0;
     let boost = 0;
 
     // Auto-boost for core concept overlaps (matching raw lowercase text to bypass stemming artifacts)
@@ -68,14 +69,19 @@ function matchPair(
 
     IMPORTANT.forEach(word => {
         if (coRaw.includes(word) && piRaw.includes(word)) {
-            boost += 0.15;
+            rawBoost += 0.15;
         }
     });
 
-    // Min token match rule: strong confidence bump if >=2 non-trivial stemmed words match
+    // Min token match rule: strong confidence bump if >=2 non-trivial stemmed words match AND base meaning is present
     const commonTokens = coTokens.filter(t => piTokens.includes(t));
-    if (commonTokens.length >= 2) {
-        boost += 0.20;
+    if (commonTokens.length >= 2 && baseScore > 0.08) {
+        rawBoost += 0.20;
+    }
+
+    // Smart Filter + Cap: Only apply boost if base signal exists, and hard cap it to prevent over-mapping inflation
+    if (baseScore > 0.05) {
+        boost = Math.min(rawBoost, 0.20);
     }
 
     const finalScore = parseFloat((baseScore + boost).toFixed(4));

@@ -50,6 +50,14 @@ function MappingCellUI({
     const label = cell.value !== null ? cell.value : "-";
     const fullLabel = cell.value !== null ? `Level ${cell.value}` : "Not Mapped";
 
+    const confidenceLabel = cell.confidence >= 0.30 ? "HIGH" : 
+                            cell.confidence >= 0.18 ? "MEDIUM" : 
+                            cell.confidence >= 0.10 ? "LOW" : "NONE";
+
+    const labelColor = confidenceLabel === "HIGH" ? "text-emerald-400" :
+                       confidenceLabel === "MEDIUM" ? "text-yellow-400" :
+                       confidenceLabel === "LOW" ? "text-orange-400" : "text-gray-400";
+
     return (
         <td className="p-0 border-r border-gray-100 relative">
             <div className="relative flex items-center justify-center p-1">
@@ -71,12 +79,13 @@ function MappingCellUI({
                 {showTip && (
                     <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-[11px] rounded-lg p-3 shadow-xl pointer-events-none">
                         <div className="font-bold mb-1 text-xs">{fullLabel} {cell.overridden ? "(Manual)" : "(Auto)"}</div>
-                        <div className="text-gray-300">Base: <span className="text-white font-mono">{cell.boost ? (cell.confidence - cell.boost).toFixed(2) : cell.confidence.toFixed(2)}</span></div>
+                        <div className="text-gray-300">Confidence: <span className={cn("font-bold font-mono", labelColor)}>{confidenceLabel}</span></div>
+                        <div className="text-gray-300 mt-1">Base: <span className="text-white font-mono">{cell.boost ? (cell.confidence - cell.boost).toFixed(2) : cell.confidence.toFixed(2)}</span></div>
                         {cell.boost ? <div className="text-gray-300">Boost: <span className="text-emerald-400 font-mono">+{cell.boost.toFixed(2)}</span></div> : null}
-                        <div className="text-gray-300">Final: <span className="text-white font-bold font-mono">{cell.confidence.toFixed(2)}</span></div>
+                        <div className="text-gray-300">Final Score: <span className="text-white font-bold font-mono">{cell.confidence.toFixed(2)}</span></div>
                         {cell.matchedWords.length > 0 && (
                             <div className="mt-1 text-gray-400">
-                                Common: <span className="text-blue-300">{cell.matchedWords.slice(0, 4).join(", ")}</span>
+                                Common Tokens: <span className="text-blue-300">{cell.matchedWords.slice(0, 4).join(", ")}</span>
                             </div>
                         )}
                         <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
