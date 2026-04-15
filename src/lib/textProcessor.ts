@@ -211,11 +211,42 @@ export function deduplicate(tokens: string[]): string[] {
 }
 
 /**
- * Full pipeline: tokenize → removeStopwords → stem → deduplicate
+ * Full pipeline: tokenize → removeStopwords → expand synonyms → stem → deduplicate
  */
 export function processText(text: string): string[] {
     if (!text || text.trim() === "") return [];
-    return deduplicate(removeStopwords(tokenize(text)).map(porterStem));
+    const baseTokens = removeStopwords(tokenize(text));
+    const expanded = expandTokens(baseTokens);
+    return deduplicate(expanded.map(porterStem));
+}
+
+// ── Synonyms (Domain Vocabulary Bridge) ───────────────────────────
+export const SYNONYMS: Record<string, string[]> = {
+    automata: ["machine", "computation", "system"],
+    grammar: ["language", "syntax"],
+    language: ["communication", "representation"],
+    design: ["develop", "create", "build", "formulate", "construct"],
+    analysis: ["analyze", "evaluate", "study", "investigate", "assess"],
+    theory: ["concept", "principle", "fundamental"],
+    algorithm: ["method", "procedure", "logic", "computation"],
+    software: ["program", "application", "system", "code"],
+    hardware: ["circuit", "device", "equipment", "component"],
+    network: ["communication", "connection", "protocol"],
+    data: ["information", "dataset", "database"],
+    model: ["simulate", "representation", "prototype"],
+    test: ["verify", "validate", "evaluate", "examine"],
+    security: ["protect", "safe", "privacy", "defense"],
+    deploy: ["implement", "install", "publish"],
+};
+
+export function expandTokens(tokens: string[]): string[] {
+    const expanded = [...tokens];
+    tokens.forEach((token) => {
+        if (SYNONYMS[token]) {
+            expanded.push(...SYNONYMS[token]);
+        }
+    });
+    return expanded;
 }
 
 // ── TF-IDF ────────────────────────────────────────────────────────

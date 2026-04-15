@@ -381,7 +381,13 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                                     <td className="border-r border-gray-200 px-3 py-2 text-gray-600">
                                         {row.pct.toFixed(2)}%
                                     </td>
-                                    <td className="px-3 py-2 font-semibold text-gray-800 text-center">
+                                    <td className={cn(
+                                        "px-3 py-2 font-semibold text-center",
+                                        row.level === 3 ? "text-green-600" :
+                                        row.level === 2 ? "text-yellow-600" :
+                                        row.level === 1 ? "text-orange-500" :
+                                        "text-red-500"
+                                    )}>
                                         {row.level > 0 ? row.level : ""}
                                     </td>
                                 </tr>

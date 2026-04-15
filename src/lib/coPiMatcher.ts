@@ -18,6 +18,7 @@ import {
     cosineSimilarity,
     jaccardSimilarity,
     getMatchedWords,
+    SYNONYMS,
 } from "./textProcessor";
 
 const CO_KEYS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
@@ -49,8 +50,24 @@ function matchPair(
     const piVec = buildTFIDF(piTokens, idf);
     const cosine = cosineSimilarity(coVec, piVec);
 
-    // Weighted final score
-    const score = parseFloat(((jaccard * 0.4) + (cosine * 0.6)).toFixed(4));
+    // Minimum match safety: prevent false positives when there is no keyword overlap
+    if (jaccard === 0 && cosine < 0.3) {
+        return {
+            value: "NO",
+            confidence: 0,
+            matchedWords: [],
+            overridden: false,
+        };
+    }
+
+    // Weighted final score: academic text is short, keyword overlap (with synonyms) > semantic
+    let score = parseFloat(((jaccard * 0.6) + (cosine * 0.4)).toFixed(4));
+
+    // Auto-boost for core concept overlaps
+    const IMPORTANT = Object.keys(SYNONYMS);
+    if (coTokens.some(t => IMPORTANT.includes(t)) && piTokens.some(t => IMPORTANT.includes(t))) {
+        score += 0.15;
+    }
 
     // Matched raw words for tooltip (before stemming)
     const matchedWords = getMatchedWords(coText, piText);
