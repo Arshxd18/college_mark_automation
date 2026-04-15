@@ -110,7 +110,7 @@ export interface PIEntry {
   poNumber: number;     // PO number this PI belongs to (1–12)
 }
 
-export type MappingDecision = "YES" | "LOW_CONFIDENCE" | "NO";
+export type MappingDecision = 3 | 2 | 1 | null;
 
 export interface MappingCell {
   value: MappingDecision;

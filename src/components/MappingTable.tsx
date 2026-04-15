@@ -40,16 +40,14 @@ function MappingCellUI({
 
     const baseStyle = useMemo(() => {
         if (cell.overridden) return "bg-yellow-50 border-2 border-yellow-400 text-yellow-800";
-        if (cell.value === "YES") {
-            if (cell.confidence >= 0.7) return "bg-emerald-100 text-emerald-800 border border-emerald-300";
-            return "bg-emerald-50 text-emerald-700 border border-emerald-200";
-        }
-        if (cell.value === "LOW_CONFIDENCE") return "bg-amber-50 text-amber-700 border border-amber-200";
-        return "bg-red-50 text-red-600 border border-red-100";
+        if (cell.value === 3) return "bg-emerald-100 text-emerald-800 border border-emerald-300";
+        if (cell.value === 2) return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+        if (cell.value === 1) return "bg-amber-50 text-amber-700 border border-amber-200";
+        return "bg-gray-50 text-gray-400 border border-gray-100";
     }, [cell]);
 
-    const label = cell.value === "YES" ? "Y" : cell.value === "LOW_CONFIDENCE" ? "L" : "N";
-    const fullLabel = cell.value === "YES" ? "YES" : cell.value === "LOW_CONFIDENCE" ? "LOW" : "NO";
+    const label = cell.value !== null ? cell.value : "-";
+    const fullLabel = cell.value !== null ? `Level ${cell.value}` : "Not Mapped";
 
     return (
         <td className="p-0 border-r border-gray-100 relative">
@@ -107,6 +105,8 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
     const [saved, setSaved] = useState(false);
     const [expandedPO, setExpandedPO] = useState<number | null>(1);
 
+    const filledCOs = CO_KEYS.filter(co => coDescriptions[co] && coDescriptions[co].trim().length > 0).length;
+
     // Group PIs by PO for accordion display
     const pisByPO = useMemo(() => getPIsByPO(piList), [piList]);
     const poNumbers = useMemo(() => Object.keys(pisByPO).map(Number).sort((a, b) => a - b), [pisByPO]);
@@ -114,8 +114,8 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
     // Compute PI attainment from current matrix
     const piAttainment = useMemo<PIAttainmentRow[]>(() => {
         if (!matrix) return [];
-        return computePIAttainment(matrix, piList);
-    }, [matrix, piList]);
+        return computePIAttainment(matrix, piList, filledCOs);
+    }, [matrix, piList, filledCOs]);
 
     // Run NLP mapping
     const handleRunMapping = useCallback(async () => {
@@ -174,7 +174,7 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
         );
     }, [matrix]);
 
-    const filledCOs = CO_KEYS.filter(co => coDescriptions[co].trim().length > 0).length;
+
 
     return (
         <div className="space-y-6">
@@ -206,7 +206,15 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                                 placeholder={`Describe what students will be able to do in ${CO_LABELS[co]}...`}
                                 className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none bg-gray-50 placeholder:text-gray-300 transition-all"
                             />
-                            {coDescriptions[co].trim() && (() => {
+                            {coDescriptions[co]?.trim() && (() => {
+                                const txtLength = coDescriptions[co].trim().length;
+                                if (txtLength > 0 && txtLength < 20) {
+                                    return (
+                                        <p className="text-[11px] text-orange-600 flex items-center gap-1">
+                                            <AlertTriangle className="w-3 h-3 flex-shrink-0" />CO description too short for accurate mapping
+                                        </p>
+                                    );
+                                }
                                 const warn = getCOWarning(coDescriptions[co]);
                                 return warn ? (
                                     <p className="text-[11px] text-orange-600 flex items-center gap-1">
@@ -268,10 +276,10 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                 <div className="flex flex-wrap gap-3 items-center text-xs">
                     <span className="text-gray-500 font-medium">Legend:</span>
                     {[
-                        { label: "YES (High ≥70%)", cls: "bg-emerald-100 text-emerald-700 border border-emerald-300" },
-                        { label: "YES (Low 60–69%)", cls: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
-                        { label: "LOW CONF", cls: "bg-amber-50 text-amber-700 border border-amber-200" },
-                        { label: "NO", cls: "bg-red-50 text-red-600 border border-red-100" },
+                        { label: "Level 3 (Strong)", cls: "bg-emerald-100 text-emerald-800 border border-emerald-300" },
+                        { label: "Level 2 (Moderate)", cls: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
+                        { label: "Level 1 (Slight)", cls: "bg-amber-50 text-amber-700 border border-amber-200" },
+                        { label: "Not Mapped (-)", cls: "bg-gray-50 text-gray-400 border border-gray-100" },
                         { label: "Overridden", cls: "bg-yellow-50 text-yellow-800 border-2 border-yellow-400" },
                     ].map(({ label, cls }) => (
                         <span key={label} className={cn("px-2.5 py-1 rounded-md font-medium", cls)}>
@@ -341,7 +349,7 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                                                         {CO_KEYS.map(co => (
                                                             <MappingCellUI
                                                                 key={co}
-                                                                cell={matrix[co]?.[pi.id] ?? { value: "NO", confidence: 0, matchedWords: [], overridden: false }}
+                                                                cell={matrix[co]?.[pi.id] ?? { value: null, confidence: 0, matchedWords: [], overridden: false }}
                                                                 onClick={() => handleToggle(co, pi.id)}
                                                             />
                                                         ))}

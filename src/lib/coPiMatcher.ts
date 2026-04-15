@@ -23,15 +23,11 @@ import {
 
 const CO_KEYS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
 
-// ── Thresholds ──────────────────────────────────────────────────
-// Adjusted per user feedback to prevent overly strict filtering
-const THRESHOLD_YES = 0.5;
-const THRESHOLD_LOW = 0.3;
-
-function decide(score: number): MappingDecision {
-    if (score >= THRESHOLD_YES) return "YES";
-    if (score >= THRESHOLD_LOW) return "LOW_CONFIDENCE";
-    return "NO";
+function getMappingLevel(score: number): MappingDecision {
+    if (score >= 0.65) return 3;
+    if (score >= 0.5) return 2;
+    if (score >= 0.3) return 1;
+    return null;
 }
 
 // ── Single pair matching ────────────────────────────────────────
@@ -53,7 +49,7 @@ function matchPair(
     // Minimum match safety: prevent false positives when there is no keyword overlap
     if (jaccard === 0 && cosine < 0.3) {
         return {
-            value: "NO",
+            value: null,
             confidence: 0,
             matchedWords: [],
             overridden: false,
@@ -82,7 +78,7 @@ function matchPair(
     });
 
     return {
-        value: decide(score),
+        value: getMappingLevel(score),
         confidence: score,
         matchedWords,
         overridden: false,
@@ -132,9 +128,9 @@ export function matchAllCOs(
 
         for (const pi of piList) {
             if (!coText.trim()) {
-                // Empty CO description → always NO
+                // Empty CO description → always null
                 matrix[co][pi.id] = {
-                    value: "NO",
+                    value: null,
                     confidence: 0,
                     matchedWords: [],
                     overridden: false,
@@ -156,33 +152,32 @@ export function matchAllCOs(
 
 // ── PI Attainment Computation ───────────────────────────────────
 /**
- * Compute PI attainment rows from the full matrix.
- * Uses confidence-weighted scoring (Option B):
- *   attainedScore = sum(confidence) for YES cells per PI
- *   pct = (attainedScore / 6) × 100
- *   level: ≥70→3, 60–69→2, 50–59→1, <50→0
+ * Compute PI attainment rows from the full matrix using actual NBA scale.
+ * Attained = sum of cell values (3, 2, 1) per PI
+ * Total = filledCOsCount * 3
+ * pct = (Attained / Total) * 100
+ * level: ≥70→3, 60–69→2, 50–59→1, <50→0
  */
 export function computePIAttainment(
     matrix: Record<COLabel, Record<string, MappingCell>>,
-    piList: PIEntry[]
+    piList: PIEntry[],
+    filledCOsCount: number
 ): PIAttainmentRow[] {
     const rows: PIAttainmentRow[] = [];
+    if (filledCOsCount === 0) return rows;
+
+    const total = filledCOsCount * 3;
 
     for (const pi of piList) {
         let attainedScore = 0;
 
         for (const co of CO_KEYS) {
             const cell = matrix[co]?.[pi.id];
-            if (!cell) continue;
-            // YES  → full confidence,  LOW_CONFIDENCE → half confidence,  NO → 0
-            if (cell.value === "YES") {
-                attainedScore += cell.confidence;
-            } else if (cell.value === "LOW_CONFIDENCE") {
-                attainedScore += cell.confidence * 0.5;
+            if (cell && cell.value !== null) {
+                attainedScore += cell.value;
             }
         }
 
-        const total = CO_KEYS.length; // 6
         const pct = parseFloat(((attainedScore / total) * 100).toFixed(2));
 
         let level = 0;
@@ -193,7 +188,8 @@ export function computePIAttainment(
         rows.push({
             piId: pi.id,
             competency: pi.competency,
-            attainedScore: parseFloat(attainedScore.toFixed(4)),
+            // attainedScore is exact integer now, but let's keep it clean
+            attainedScore,
             total,
             pct,
             level,
@@ -206,7 +202,7 @@ export function computePIAttainment(
 // ── Manual Override ─────────────────────────────────────────────
 /**
  * Toggle a single cell's decision and mark it as overridden.
- * Cycling: YES → NO → LOW_CONFIDENCE → YES
+ * Cycling: 3 → 2 → 1 → null → 3
  */
 export function toggleCell(
     matrix: Record<COLabel, Record<string, MappingCell>>,
@@ -216,7 +212,7 @@ export function toggleCell(
     const cell = matrix[co]?.[piId];
     if (!cell) return matrix;
 
-    const cycleOrder: MappingDecision[] = ["YES", "LOW_CONFIDENCE", "NO"];
+    const cycleOrder: MappingDecision[] = [3, 2, 1, null];
     const currentIdx = cycleOrder.indexOf(cell.value);
     const nextValue = cycleOrder[(currentIdx + 1) % cycleOrder.length];
 
