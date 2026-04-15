@@ -24,9 +24,9 @@ import {
 const CO_KEYS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
 
 function getMappingLevel(score: number): MappingDecision {
-    if (score >= 0.65) return 3;
-    if (score >= 0.5) return 2;
-    if (score >= 0.3) return 1;
+    if (score >= 0.25) return 3;
+    if (score >= 0.15) return 2;
+    if (score >= 0.08) return 1;
     return null;
 }
 
@@ -47,23 +47,38 @@ function matchPair(
     const cosine = cosineSimilarity(coVec, piVec);
 
     // Minimum match safety: prevent false positives when there is no keyword overlap
-    if (jaccard === 0 && cosine < 0.3) {
+    if (jaccard === 0 && cosine < 0.1) {
         return {
             value: null,
             confidence: 0,
             matchedWords: [],
             overridden: false,
+            boost: 0,
         };
     }
 
     // Weighted final score: academic text is short, keyword overlap (with synonyms) > semantic
-    let score = parseFloat(((jaccard * 0.6) + (cosine * 0.4)).toFixed(4));
+    let baseScore = parseFloat(((jaccard * 0.6) + (cosine * 0.4)).toFixed(4));
+    let boost = 0;
 
-    // Auto-boost for core concept overlaps
+    // Auto-boost for core concept overlaps (matching raw lowercase text to bypass stemming artifacts)
     const IMPORTANT = Object.keys(SYNONYMS);
-    if (coTokens.some(t => IMPORTANT.includes(t)) && piTokens.some(t => IMPORTANT.includes(t))) {
-        score += 0.15;
+    const coRaw = coText.toLowerCase();
+    const piRaw = piText.toLowerCase();
+
+    IMPORTANT.forEach(word => {
+        if (coRaw.includes(word) && piRaw.includes(word)) {
+            boost += 0.15;
+        }
+    });
+
+    // Min token match rule: strong confidence bump if >=2 non-trivial stemmed words match
+    const commonTokens = coTokens.filter(t => piTokens.includes(t));
+    if (commonTokens.length >= 2) {
+        boost += 0.20;
     }
+
+    const finalScore = parseFloat((baseScore + boost).toFixed(4));
 
     // Matched raw words for tooltip (before stemming)
     const matchedWords = getMatchedWords(coText, piText);
@@ -74,14 +89,17 @@ function matchPair(
         piText,
         keywordScore: jaccard,
         semanticScore: cosine,
-        finalScore: score
+        baseScore,
+        boost,
+        finalScore
     });
 
     return {
-        value: getMappingLevel(score),
-        confidence: score,
+        value: getMappingLevel(finalScore),
+        confidence: finalScore,
         matchedWords,
         overridden: false,
+        boost,
     };
 }
 
@@ -134,6 +152,7 @@ export function matchAllCOs(
                     confidence: 0,
                     matchedWords: [],
                     overridden: false,
+                    boost: 0,
                 };
             } else {
                 matrix[co][pi.id] = matchPair(

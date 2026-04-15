@@ -117,6 +117,7 @@ export interface MappingCell {
   confidence: number;       // 0–1 final NLP score
   matchedWords: string[];   // common tokens shown in tooltip
   overridden: boolean;      // true if faculty manually toggled
+  boost: number;            // keyword inflation to visualize in UI
 }
 
 export interface PIAttainmentRow {

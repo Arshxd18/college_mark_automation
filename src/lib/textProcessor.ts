@@ -222,13 +222,13 @@ export function processText(text: string): string[] {
 
 // ── Synonyms (Domain Vocabulary Bridge) ───────────────────────────
 export const SYNONYMS: Record<string, string[]> = {
-    automata: ["machine", "computation", "system"],
+    automata: ["machine", "computation", "system", "compute"],
     grammar: ["language", "syntax"],
     language: ["communication", "representation"],
     design: ["develop", "create", "build", "formulate", "construct"],
-    analysis: ["analyze", "evaluate", "study", "investigate", "assess"],
+    analysis: ["analyze", "evaluate", "study", "investigate", "assess", "examine"],
     theory: ["concept", "principle", "fundamental"],
-    algorithm: ["method", "procedure", "logic", "computation"],
+    algorithm: ["method", "procedure", "logic", "computation", "compute"],
     software: ["program", "application", "system", "code"],
     hardware: ["circuit", "device", "equipment", "component"],
     network: ["communication", "connection", "protocol"],
