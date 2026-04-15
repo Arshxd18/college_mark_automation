@@ -243,7 +243,7 @@ export function computePOAttainment(
             const avg = valid.reduce((a: any, b: any) => a + b, 0) / valid.length;
             rows.push({
                 poId: poId.toString(),
-                level: Math.round(avg),
+                level: Number(avg.toFixed(2)),
             });
         }
     }
