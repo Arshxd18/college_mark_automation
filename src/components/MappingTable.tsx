@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import { Brain, Save, RotateCcw, ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle, Info } from "lucide-react";
+import { Brain, Save, RotateCcw, ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle, Info, Download } from "lucide-react";
 import { COLabel, MappingCell, MappingDecision, PIEntry, PIAttainmentRow, COMappingDoc } from "@/types";
 import { matchAllCOs, computePIAttainment, toggleCell, resetOverrides } from "@/lib/coPiMatcher";
 import { getCOWarning } from "@/lib/textProcessor";
 import { DEFAULT_PI_LIST, getPIsByPO } from "@/lib/piData";
 import { saveCOMapping } from "@/lib/firestoreService";
+import { exportMappingToExcel } from "@/lib/exportMappingExcel";
 import { cn } from "@/lib/utils";
 
 const CO_KEYS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
@@ -70,7 +71,7 @@ function MappingCellUI({
                 {showTip && (
                     <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-[11px] rounded-lg p-3 shadow-xl pointer-events-none">
                         <div className="font-bold mb-1 text-xs">{fullLabel} {cell.overridden ? "(Manual)" : "(Auto)"}</div>
-                        <div className="text-gray-300">Score: <span className="text-white font-mono">{(cell.confidence * 100).toFixed(1)}%</span></div>
+                        <div className="text-gray-300">Score: <span className="text-white font-mono">{cell.confidence.toFixed(2)}</span></div>
                         {cell.matchedWords.length > 0 && (
                             <div className="mt-1 text-gray-300">
                                 Matched: <span className="text-emerald-300">{cell.matchedWords.slice(0, 4).join(", ")}</span>
@@ -166,6 +167,11 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
             setSaving(false);
         }
     }, [matrix, batchYear, subjectId, coDescriptions, piAttainment]);
+
+    const handleExport = useCallback(() => {
+        if (!matrix) return;
+        exportMappingToExcel(matrix, piList, piAttainment, batchYear, subjectId, pisByPO);
+    }, [matrix, piList, piAttainment, batchYear, subjectId, pisByPO]);
 
     const hasOverrides = useMemo(() => {
         if (!matrix) return false;
@@ -265,6 +271,13 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                                 {saving ? "Saving..." : saved ? "Saved!" : "Save to Firebase"}
+                            </button>
+                            <button
+                                onClick={handleExport}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm hover:shadow-md active:scale-95"
+                            >
+                                <Download className="w-4 h-4" />
+                                Export Excel
                             </button>
                         </>
                     )}
