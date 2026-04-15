@@ -23,8 +23,9 @@ import {
 const CO_KEYS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
 
 // ── Thresholds ──────────────────────────────────────────────────
-const THRESHOLD_YES = 0.6;
-const THRESHOLD_LOW = 0.4;
+// Adjusted per user feedback to prevent overly strict filtering
+const THRESHOLD_YES = 0.5;
+const THRESHOLD_LOW = 0.3;
 
 function decide(score: number): MappingDecision {
     if (score >= THRESHOLD_YES) return "YES";
@@ -53,6 +54,15 @@ function matchPair(
 
     // Matched raw words for tooltip (before stemming)
     const matchedWords = getMatchedWords(coText, piText);
+
+    // TEMP DEBUG LOG to console for user to verify similarity engine performance
+    console.log({
+        coText,
+        piText,
+        keywordScore: jaccard,
+        semanticScore: cosine,
+        finalScore: score
+    });
 
     return {
         value: decide(score),

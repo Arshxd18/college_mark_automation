@@ -358,54 +358,42 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
             )}
 
             {/* ── PI Attainment Summary ─────────────────────────── */}
+            {/* ── PI Attainment Summary ─────────────────────────── */}
             {piAttainment.length > 0 && (
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-100">
-                        <h2 className="font-bold text-gray-900">PI Attainment Summary</h2>
-                        <p className="text-xs text-gray-500 mt-0.5">Confidence-weighted attainment levels per Programme Indicator</p>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="bg-gray-50 border-b border-gray-100">
-                                    <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">PI ID</th>
-                                    <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Competency</th>
-                                    <th className="p-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Attained Score</th>
-                                    <th className="p-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">% Attainment</th>
-                                    <th className="p-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Level</th>
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 overflow-x-auto mt-6">
+                    <h2 className="font-bold text-gray-900 mb-4">PI Attainment Summary</h2>
+                    <table className="w-full border text-sm text-left">
+                        <thead className="bg-gray-100 border-b border-gray-200">
+                            <tr>
+                                <th className="border-r border-gray-200 px-3 py-2 font-semibold text-gray-700">PI ID</th>
+                                <th className="border-r border-gray-200 px-3 py-2 font-semibold text-gray-700">Total PI</th>
+                                <th className="border-r border-gray-200 px-3 py-2 font-semibold text-gray-700">Attained</th>
+                                <th className="border-r border-gray-200 px-3 py-2 font-semibold text-gray-700">% Attained</th>
+                                <th className="px-3 py-2 font-semibold text-gray-700">Level</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {piAttainment.map((row) => (
+                                <tr key={row.piId} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                    <td className="border-r border-gray-200 px-3 py-2 text-indigo-700 font-medium">{row.piId}</td>
+                                    <td className="border-r border-gray-200 px-3 py-2 text-gray-600">{row.total}</td>
+                                    <td className="border-r border-gray-200 px-3 py-2 text-gray-600">{row.attainedScore.toFixed(2)}</td>
+                                    <td className="border-r border-gray-200 px-3 py-2 text-gray-600">
+                                        {row.pct.toFixed(2)}%
+                                    </td>
+                                    <td className="px-3 py-2 font-semibold text-gray-800 text-center">
+                                        {row.level > 0 ? row.level : ""}
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {piAttainment.map((row, idx) => (
-                                    <tr key={row.piId} className={cn(
-                                        "border-b border-gray-50 hover:bg-gray-50/50 transition-colors",
-                                        idx % 2 === 1 && "bg-gray-50/20"
-                                    )}>
-                                        <td className="p-3 font-mono text-xs text-indigo-600 font-medium">{row.piId}</td>
-                                        <td className="p-3 text-xs text-gray-600">{row.competency}</td>
-                                        <td className="p-3 text-center text-xs font-medium text-gray-700">
-                                            {row.attainedScore.toFixed(2)} / {row.total}
-                                        </td>
-                                        <td className="p-3 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <div className="flex-1 max-w-[80px] bg-gray-100 rounded-full h-1.5">
-                                                    <div
-                                                        className={cn("h-1.5 rounded-full", row.pct >= 70 ? "bg-emerald-500" : row.pct >= 50 ? "bg-yellow-500" : "bg-red-400")}
-                                                        style={{ width: `${Math.min(row.pct, 100)}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-xs font-semibold text-gray-700 w-12 text-right">{row.pct}%</span>
-                                            </div>
-                                        </td>
-                                        <td className="p-3 text-center">
-                                            <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-bold", LEVEL_BADGE[row.level])}>
-                                                L{row.level}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    <div className="mt-4 text-xs text-gray-600 space-y-1">
+                        <p>3 → Strongly Mapped</p>
+                        <p>2 → Moderately Mapped</p>
+                        <p>1 → Slightly Mapped</p>
+                        <p>Blank → Not Mapped</p>
                     </div>
                 </div>
             )}
