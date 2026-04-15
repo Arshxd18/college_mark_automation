@@ -123,6 +123,7 @@ export interface MappingCell {
 export interface POAttainmentRow {
   poId: string;
   level: number | null;
+  coMap: Record<COLabel, number | null>;
 }
 
 export interface COMappingDoc {

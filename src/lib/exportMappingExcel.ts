@@ -104,7 +104,7 @@ export async function exportMappingToExcel(
     const attSheet = workbook.addWorksheet("PO Summary");
     
     // Header Row
-    const headerRow = attSheet.addRow(poAttainment.map(r => Number(r.poId) > 12 ? `PSO${Number(r.poId) - 12}` : `PO${r.poId}`));
+    const headerRow = attSheet.addRow(["CO / PO", ...poAttainment.map(r => Number(r.poId) > 12 ? `PSO${Number(r.poId) - 12}` : `PO${r.poId}`)]);
     headerRow.eachCell(cell => {
         cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4F46E5" } };
@@ -112,12 +112,29 @@ export async function exportMappingToExcel(
         cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
     });
 
-    // Value Row
-    const valueRow = attSheet.addRow(poAttainment.map(r => r.level !== null ? r.level : "-"));
+    // CO Rows
+    CO_KEYS.forEach(co => {
+        const coRow = attSheet.addRow([
+            co.toUpperCase(),
+            ...poAttainment.map(r => {
+                const val = r.coMap?.[co];
+                return val !== null && val !== undefined ? val : "-";
+            })
+        ]);
+        coRow.getCell(1).font = { bold: true };
+        coRow.eachCell(cell => {
+            cell.alignment = { horizontal: "center" };
+            cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+        });
+    });
+
+    // Final AVG Row
+    const valueRow = attSheet.addRow(["FINAL AVG", ...poAttainment.map(r => r.level !== null ? r.level : "-")]);
     valueRow.eachCell(cell => {
         cell.alignment = { horizontal: "center" };
-        cell.font = { bold: true };
-        cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+        cell.font = { bold: true, color: { argb: "FF1E1B4B" } };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E7FF" } };
+        cell.border = { top: { style: "double" }, left: { style: "thin" }, bottom: { style: "double" }, right: { style: "thin" } };
     });
 
     // Download Phase

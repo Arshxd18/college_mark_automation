@@ -419,6 +419,9 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                     <table className="w-full border-collapse text-sm text-center">
                         <thead className="bg-gray-100 border-b border-gray-200">
                             <tr>
+                                <th className="border-r border-gray-200 px-4 py-3 font-semibold text-gray-700 whitespace-nowrap bg-gray-200">
+                                    CO / PO
+                                </th>
                                 {poAttainment.map(row => (
                                     <th key={row.poId} className="border-r border-gray-200 px-4 py-3 font-semibold text-gray-700 whitespace-nowrap">
                                         {Number(row.poId) > 12 ? `PSO${Number(row.poId) - 12}` : `PO${row.poId}`}
@@ -427,15 +430,40 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                             </tr>
                         </thead>
                         <tbody>
-                            <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                            {CO_KEYS.map((co) => (
+                                <tr key={co} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                    <td className="border-r border-gray-200 px-4 py-2 font-bold text-gray-600 bg-gray-50">
+                                        {co.toUpperCase()}
+                                    </td>
+                                    {poAttainment.map((row) => {
+                                        const val = row.coMap?.[co];
+                                        return (
+                                            <td key={`${row.poId}-${co}`} className={cn(
+                                                "border-r border-gray-200 px-4 py-2 font-medium text-base",
+                                                val === 3 ? "text-emerald-600 bg-emerald-50/20" :
+                                                val === 2 ? "text-yellow-600 bg-yellow-50/20" :
+                                                val === 1 ? "text-orange-600 bg-orange-50/20" :
+                                                "text-gray-400"
+                                            )}>
+                                                {val !== null && val !== undefined ? val : "-"}
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+                            ))}
+
+                            <tr className="border-t-2 border-gray-300">
+                                <td className="border-r border-gray-300 px-4 py-4 font-bold text-indigo-900 bg-indigo-50/80">
+                                    FINAL AVG
+                                </td>
                                 {poAttainment.map(row => (
-                                    <td key={row.poId} className={cn(
-                                        "border-r border-gray-200 px-4 py-4 font-bold text-lg",
-                                        row.level === 3 ? "text-emerald-600 bg-emerald-50/40" :
-                                        row.level === 2 ? "text-yellow-600 bg-yellow-50/40" :
-                                        row.level === 1 ? "text-orange-600 bg-orange-50/40" :
-                                        row.level === 0 ? "text-red-500 bg-red-50/40" :
-                                        "text-gray-400"
+                                    <td key={`avg-${row.poId}`} className={cn(
+                                        "border-r border-gray-300 px-4 py-4 font-bold text-lg",
+                                        row.level && row.level >= 2.5 ? "text-emerald-700 bg-emerald-100/50" :
+                                        row.level && row.level >= 1.5 ? "text-yellow-700 bg-yellow-100/50" :
+                                        row.level && row.level > 0 ? "text-orange-700 bg-orange-100/50" :
+                                        row.level === 0 ? "text-red-600 bg-red-100/50" :
+                                        "text-gray-400 bg-gray-50/50"
                                     )}>
                                         {row.level !== null ? row.level : "-"}
                                     </td>

@@ -228,6 +228,19 @@ export function computePOAttainment(
 
     for (const poId of poNumbers) {
         const pis = pisByPO[poId];
+
+        // Compile CO breakdown mappings (coMap)
+        const coMap: Record<COLabel, number | null> = {} as any;
+        for (const co of CO_KEYS) {
+            const vals = pis.map(pi => matrix[co]?.[pi.id]?.value).filter(v => v !== null && v !== undefined) as number[];
+            if (vals.length > 0) {
+                const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+                coMap[co] = Math.round(avg);
+            } else {
+                coMap[co] = null;
+            }
+        }
+
         const piLevels = pis.map(pi => {
             const piRow = CO_KEYS.map(co => matrix[co]?.[pi.id]?.value ?? null);
             return computePILevel(piRow);
@@ -238,12 +251,14 @@ export function computePOAttainment(
             rows.push({
                 poId: poId.toString(),
                 level: null,
+                coMap,
             });
         } else {
             const avg = valid.reduce((a: any, b: any) => a + b, 0) / valid.length;
             rows.push({
                 poId: poId.toString(),
                 level: Number(avg.toFixed(2)),
+                coMap,
             });
         }
     }
