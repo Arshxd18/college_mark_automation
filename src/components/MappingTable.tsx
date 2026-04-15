@@ -2,8 +2,8 @@
 
 import React, { useState, useMemo, useCallback } from "react";
 import { Brain, Save, RotateCcw, ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle, Info, Download } from "lucide-react";
-import { COLabel, MappingCell, MappingDecision, PIEntry, PIAttainmentRow, COMappingDoc } from "@/types";
-import { matchAllCOs, computePIAttainment, toggleCell, resetOverrides } from "@/lib/coPiMatcher";
+import { COLabel, MappingCell, MappingDecision, PIEntry, POAttainmentRow, COMappingDoc } from "@/types";
+import { matchAllCOs, computePOAttainment, toggleCell, resetOverrides } from "@/lib/coPiMatcher";
 import { getCOWarning } from "@/lib/textProcessor";
 import { DEFAULT_PI_LIST, getPIsByPO } from "@/lib/piData";
 import { saveCOMapping } from "@/lib/firestoreService";
@@ -123,10 +123,10 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
     const pisByPO = useMemo(() => getPIsByPO(piList), [piList]);
     const poNumbers = useMemo(() => Object.keys(pisByPO).map(Number).sort((a, b) => a - b), [pisByPO]);
 
-    // Compute PI attainment from current matrix
-    const piAttainment = useMemo<PIAttainmentRow[]>(() => {
+    // Compute PO attainment from current matrix
+    const poAttainment = useMemo<POAttainmentRow[]>(() => {
         if (!matrix) return [];
-        return computePIAttainment(matrix, piList, filledCOs);
+        return computePOAttainment(matrix, piList, filledCOs);
     }, [matrix, piList, filledCOs]);
 
     // Run NLP mapping
@@ -167,7 +167,7 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                 subjectId,
                 coDescriptions,
                 matrix,
-                piAttainment,
+                poAttainment,
                 savedAt: new Date().toISOString(),
             });
             setSaved(true);
@@ -177,12 +177,12 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
         } finally {
             setSaving(false);
         }
-    }, [matrix, batchYear, subjectId, coDescriptions, piAttainment]);
+    }, [matrix, batchYear, subjectId, coDescriptions, poAttainment]);
 
     const handleExport = useCallback(() => {
         if (!matrix) return;
-        exportMappingToExcel(matrix, piList, piAttainment, batchYear, subjectId, pisByPO);
-    }, [matrix, piList, piAttainment, batchYear, subjectId, pisByPO]);
+        exportMappingToExcel(matrix, piList, poAttainment, batchYear, subjectId, pisByPO);
+    }, [matrix, piList, poAttainment, batchYear, subjectId, pisByPO]);
 
     const hasOverrides = useMemo(() => {
         if (!matrix) return false;
@@ -412,49 +412,43 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                 </div>
             )}
 
-            {/* ── PI Attainment Summary ─────────────────────────── */}
-            {/* ── PI Attainment Summary ─────────────────────────── */}
-            {piAttainment.length > 0 && (
+            {/* ── PO Attainment Summary ─────────────────────────── */}
+            {poAttainment.length > 0 && (
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 overflow-x-auto mt-6">
-                    <h2 className="font-bold text-gray-900 mb-4">PI Attainment Summary</h2>
-                    <table className="w-full border text-sm text-left">
+                    <h2 className="font-bold text-gray-900 mb-4">Final PO Attainment Summary</h2>
+                    <table className="w-full border-collapse text-sm text-center">
                         <thead className="bg-gray-100 border-b border-gray-200">
                             <tr>
-                                <th className="border-r border-gray-200 px-3 py-2 font-semibold text-gray-700">PI ID</th>
-                                <th className="border-r border-gray-200 px-3 py-2 font-semibold text-gray-700">Total PI</th>
-                                <th className="border-r border-gray-200 px-3 py-2 font-semibold text-gray-700">Attained</th>
-                                <th className="border-r border-gray-200 px-3 py-2 font-semibold text-gray-700">% Attained</th>
-                                <th className="px-3 py-2 font-semibold text-gray-700">Level</th>
+                                {poAttainment.map(row => (
+                                    <th key={row.poId} className="border-r border-gray-200 px-4 py-3 font-semibold text-gray-700 whitespace-nowrap">
+                                        {row.poId > "12" ? `PSO${parseInt(row.poId) - 12}` : `PO${row.poId}`}
+                                    </th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody>
-                            {piAttainment.map((row) => (
-                                <tr key={row.piId} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <td className="border-r border-gray-200 px-3 py-2 text-indigo-700 font-medium">{row.piId}</td>
-                                    <td className="border-r border-gray-200 px-3 py-2 text-gray-600">{row.total}</td>
-                                    <td className="border-r border-gray-200 px-3 py-2 text-gray-600">{row.attainedScore.toFixed(2)}</td>
-                                    <td className="border-r border-gray-200 px-3 py-2 text-gray-600">
-                                        {row.pct.toFixed(2)}%
-                                    </td>
-                                    <td className={cn(
-                                        "px-3 py-2 font-semibold text-center",
-                                        row.level === 3 ? "text-green-600" :
-                                        row.level === 2 ? "text-yellow-600" :
-                                        row.level === 1 ? "text-orange-500" :
-                                        "text-red-500"
+                            <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                {poAttainment.map(row => (
+                                    <td key={row.poId} className={cn(
+                                        "border-r border-gray-200 px-4 py-4 font-bold text-lg",
+                                        row.level === 3 ? "text-emerald-600 bg-emerald-50/40" :
+                                        row.level === 2 ? "text-yellow-600 bg-yellow-50/40" :
+                                        row.level === 1 ? "text-orange-600 bg-orange-50/40" :
+                                        row.level === 0 ? "text-red-500 bg-red-50/40" :
+                                        "text-gray-400"
                                     )}>
-                                        {row.level > 0 ? row.level : ""}
+                                        {row.level !== null ? row.level : "-"}
                                     </td>
-                                </tr>
-                            ))}
+                                ))}
+                            </tr>
                         </tbody>
                     </table>
 
-                    <div className="mt-4 text-xs text-gray-600 space-y-1">
-                        <p>3 → Strongly Mapped</p>
-                        <p>2 → Moderately Mapped</p>
-                        <p>1 → Slightly Mapped</p>
-                        <p>Blank → Not Mapped</p>
+                    <div className="mt-4 text-xs text-gray-600 flex gap-4 font-medium">
+                        <p><span className="inline-block w-3 h-3 rounded-full bg-emerald-500 mr-1"></span> Level 3 (Strong)</p>
+                        <p><span className="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-1"></span> Level 2 (Moderate)</p>
+                        <p><span className="inline-block w-3 h-3 rounded-full bg-orange-500 mr-1"></span> Level 1 (Slight)</p>
+                        <p><span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-1"></span> Level 0 (Fail)</p>
                     </div>
                 </div>
             )}

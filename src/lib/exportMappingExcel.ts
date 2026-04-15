@@ -1,12 +1,12 @@
 import ExcelJS from "exceljs";
-import { MappingCell, COLabel, PIEntry, PIAttainmentRow } from "@/types";
+import { MappingCell, COLabel, PIEntry, POAttainmentRow } from "@/types";
 
 const CO_KEYS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
 
 export async function exportMappingToExcel(
     matrix: Record<COLabel, Record<string, MappingCell>>,
     piList: PIEntry[],
-    piAttainment: PIAttainmentRow[],
+    poAttainment: POAttainmentRow[],
     batchYear: string,
     subjectId: string,
     pisByPO: Record<number, PIEntry[]>
@@ -100,36 +100,24 @@ export async function exportMappingToExcel(
         r.getCell(1).font = { bold: true };
     });
 
-    // ── Sheet 2: Attainment Summary ──────────────
-    const attSheet = workbook.addWorksheet("PI Attainment");
+    // ── Sheet 2: PO Attainment Summary ──────────────
+    const attSheet = workbook.addWorksheet("PO Summary");
     
-    attSheet.columns = [
-        { header: "PI ID", key: "piId", width: 12 },
-        { header: "Total PI", key: "total", width: 15 },
-        { header: "Attained", key: "attained", width: 15 },
-        { header: "% Attained", key: "pct", width: 15 },
-        { header: "Level", key: "level", width: 12 },
-    ];
-
-    attSheet.getRow(1).eachCell(cell => {
+    // Header Row
+    const headerRow = attSheet.addRow(poAttainment.map(r => r.poId > "12" ? `PSO${parseInt(r.poId) - 12}` : `PO${r.poId}`));
+    headerRow.eachCell(cell => {
         cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4F46E5" } };
         cell.alignment = { horizontal: "center" };
         cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
     });
 
-    piAttainment.forEach(row => {
-        const r = attSheet.addRow({
-            piId: row.piId,
-            total: row.total,
-            attained: row.attainedScore,
-            pct: `${row.pct}%`,
-            level: row.level > 0 ? row.level : "-" 
-        });
-        r.eachCell(cell => {
-            cell.alignment = { horizontal: "center" };
-            cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
-        });
+    // Value Row
+    const valueRow = attSheet.addRow(poAttainment.map(r => r.level !== null ? r.level : "-"));
+    valueRow.eachCell(cell => {
+        cell.alignment = { horizontal: "center" };
+        cell.font = { bold: true };
+        cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
     });
 
     // Download Phase

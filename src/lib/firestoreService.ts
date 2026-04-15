@@ -19,6 +19,7 @@ import {
     ExamConfig,
     COLabel,
     COMappingDoc,
+    POAttainmentRow,
 } from "@/types";
 import { computeAssessmentCO } from "./attainmentEngine";
 

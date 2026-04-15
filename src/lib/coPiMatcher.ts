@@ -10,7 +10,7 @@
  *   5. Decision: ≥0.6 → YES, ≥0.4 → LOW_CONFIDENCE, <0.4 → NO
  */
 
-import { PIEntry, MappingCell, MappingDecision, COLabel, PIAttainmentRow } from "@/types";
+import { PIEntry, MappingCell, MappingDecision, COLabel, POAttainmentRow } from "@/types";
 import {
     processText,
     buildIDF,
@@ -190,51 +190,61 @@ export function matchAllCOs(
     return matrix;
 }
 
-// ── PI Attainment Computation ───────────────────────────────────
+// ── PO Attainment Computation ───────────────────────────────────
+
+function computePILevel(piRow: (number | null)[]): number | null {
+    const valid = piRow.filter(v => v !== null);
+    if (valid.length === 0) return null;
+
+    const attained = valid.filter((v: any) => v >= 1).length;
+    const pct = (attained / valid.length) * 100;
+
+    if (pct >= 70) return 3;
+    if (pct >= 60) return 2;
+    if (pct >= 50) return 1;
+    return 0;
+}
+
 /**
- * Compute PI attainment rows from the full matrix using actual NBA scale.
- * Attained = sum of cell values (3, 2, 1) per PI
- * Total = filledCOsCount * 3
- * pct = (Attained / Total) * 100
- * level: ≥70→3, 60–69→2, 50–59→1, <50→0
+ * Computes the final PO levels by aggressively averaging the derived PI levels.
  */
-export function computePIAttainment(
+export function computePOAttainment(
     matrix: Record<COLabel, Record<string, MappingCell>>,
     piList: PIEntry[],
     filledCOsCount: number
-): PIAttainmentRow[] {
-    const rows: PIAttainmentRow[] = [];
+): POAttainmentRow[] {
+    const rows: POAttainmentRow[] = [];
     if (filledCOsCount === 0) return rows;
 
+    // Group logic to match standard PIs to POs
+    const pisByPO: Record<number, PIEntry[]> = {};
     for (const pi of piList) {
-        let attainedScore = 0;
-        let validMapped = 0;
+        if (!pisByPO[pi.poNumber]) pisByPO[pi.poNumber] = [];
+        pisByPO[pi.poNumber].push(pi);
+    }
 
-        for (const co of CO_KEYS) {
-            const cell = matrix[co]?.[pi.id];
-            if (cell && cell.value !== null) {
-                attainedScore += cell.value;
-                validMapped++;
-            }
-        }
+    const poNumbers = Object.keys(pisByPO).map(Number).sort((a, b) => a - b);
 
-        const total = validMapped * 3;
-        const pct = total === 0 ? 0 : parseFloat(((attainedScore / total) * 100).toFixed(2));
-
-        let level = 0;
-        if (pct >= 70) level = 3;
-        else if (pct >= 60) level = 2;
-        else if (pct >= 50) level = 1;
-
-        rows.push({
-            piId: pi.id,
-            competency: pi.competency,
-            // attainedScore is exact integer now, but let's keep it clean
-            attainedScore,
-            total,
-            pct,
-            level,
+    for (const poId of poNumbers) {
+        const pis = pisByPO[poId];
+        const piLevels = pis.map(pi => {
+            const piRow = CO_KEYS.map(co => matrix[co]?.[pi.id]?.value ?? null);
+            return computePILevel(piRow);
         });
+
+        const valid = piLevels.filter(v => v !== null);
+        if (valid.length === 0) {
+            rows.push({
+                poId: poId.toString(),
+                level: null,
+            });
+        } else {
+            const avg = valid.reduce((a: any, b: any) => a + b, 0) / valid.length;
+            rows.push({
+                poId: poId.toString(),
+                level: Math.round(avg),
+            });
+        }
     }
 
     return rows;

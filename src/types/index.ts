@@ -120,13 +120,9 @@ export interface MappingCell {
   boost: number;            // keyword inflation to visualize in UI
 }
 
-export interface PIAttainmentRow {
-  piId: string;
-  competency: string;
-  attainedScore: number;  // sum of confidence for YES cells
-  total: number;          // always 6
-  pct: number;
-  level: number;          // 0–3
+export interface POAttainmentRow {
+  poId: string;
+  level: number | null;
 }
 
 export interface COMappingDoc {
@@ -135,7 +131,7 @@ export interface COMappingDoc {
   subjectId: string;
   coDescriptions: Record<COLabel, string>;
   matrix: Record<COLabel, Record<string, MappingCell>>;
-  piAttainment: PIAttainmentRow[];
+  poAttainment: POAttainmentRow[];
   savedAt: string;
 }
 
