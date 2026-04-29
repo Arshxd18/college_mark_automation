@@ -103,7 +103,7 @@ export default function AttainmentDashboard() {
             setAssessments(docs);
             if (savedResult) {
                 setResult(savedResult);
-                setIndirect(savedResult.indirectAttainment);
+                setIndirect(savedResult.indirectAttainment ?? zeroScores());
             } else {
                 setIndirect(zeroScores());
             }
@@ -283,7 +283,7 @@ export default function AttainmentDashboard() {
                     <div className="px-6 py-4 bg-gradient-to-r from-violet-600 to-indigo-600">
                         <h3 className="text-white font-bold">Final CO Attainment Results</h3>
                         <p className="text-violet-200 text-xs mt-0.5">
-                            Computed: {new Date(result.computedAt).toLocaleString()} • Batch: {result.batchYear} • Subject: {result.subjectId}
+                            Computed: {result.computedAt ? new Date(result.computedAt).toLocaleString() : "Never"} • Batch: {result.batchYear} • Subject: {result.subjectId}
                         </p>
                     </div>
                     <div className="overflow-x-auto">
@@ -338,7 +338,7 @@ export default function AttainmentDashboard() {
                                 <tr className="bg-[#feff00]">
                                     <td className="px-2 py-1.5 text-xs text-gray-900 border border-gray-400">Internal</td>
                                     {CO_KEYS.map(co => (
-                                        <td key={co} className="px-2 py-1.5 text-center text-xs text-gray-900 border border-gray-400">{Number(result.internalAttainment[co].toFixed(2))}</td>
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs text-gray-900 border border-gray-400">{result.internalAttainment?.[co] !== undefined ? Number(result.internalAttainment[co].toFixed(2)) : "-"}</td>
                                     ))}
                                     <td className="px-2 py-1.5 text-center text-xs text-gray-900 border border-gray-400 bg-white">100%</td>
                                     <td className="px-2 py-1.5 text-center text-xs font-bold text-gray-900 border border-gray-400">40%</td>
@@ -360,7 +360,7 @@ export default function AttainmentDashboard() {
                                 <tr className="bg-[#92d050]">
                                     <td className="px-2 py-1.5 text-xs font-medium text-gray-900 border border-gray-400 uppercase">DIRECT ATTAINMENT</td>
                                     {CO_KEYS.map(co => (
-                                        <td key={co} className="px-2 py-1.5 text-center text-xs font-medium border border-gray-400">{Number(result.directAttainment[co].toFixed(2))}</td>
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs font-medium border border-gray-400">{result.directAttainment?.[co] !== undefined ? Number(result.directAttainment[co].toFixed(2)) : "-"}</td>
                                     ))}
                                     <td className="px-2 py-1.5 text-center text-xs border border-gray-400 bg-white"></td>
                                     <td className="px-2 py-1.5 text-center text-xs border border-gray-400 bg-white"></td>
@@ -371,7 +371,7 @@ export default function AttainmentDashboard() {
                                 <tr className="bg-gray-50">
                                     <td className="px-2 py-1.5 text-xs text-gray-800 border border-gray-300">Indirect Attainment</td>
                                     {CO_KEYS.map(co => (
-                                        <td key={co} className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300 bg-white">{Number(result.indirectAttainment[co].toFixed(2))}</td>
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300 bg-white">{result.indirectAttainment?.[co] !== undefined ? Number(result.indirectAttainment[co].toFixed(2)) : "-"}</td>
                                     ))}
                                     <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-white"></td>
                                     <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-white"></td>
@@ -382,7 +382,7 @@ export default function AttainmentDashboard() {
                                 <tr className="bg-gray-50">
                                     <td className="px-2 py-1.5 text-xs font-bold text-gray-900 border border-gray-300">Final Attainment</td>
                                     {CO_KEYS.map(co => (
-                                        <td key={co} className="px-2 py-1.5 text-center text-xs font-bold text-gray-900 border border-gray-300 bg-white">{Number(result.finalAttainment[co].toFixed(2))}</td>
+                                        <td key={co} className="px-2 py-1.5 text-center text-xs font-bold text-gray-900 border border-gray-300 bg-white">{result.finalAttainment?.[co] !== undefined ? Number(result.finalAttainment[co].toFixed(2)) : "-"}</td>
                                     ))}
                                     <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-white"></td>
                                     <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-white"></td>
@@ -397,6 +397,7 @@ export default function AttainmentDashboard() {
                         <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">CO Attainment Gap (Target: 2.0)</h4>
                         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                             {CO_KEYS.map(co => {
+                                if (result.finalAttainment?.[co] === undefined) return null;
                                 const gap = result.finalAttainment[co] - 2.0;
                                 const positive = gap >= 0;
                                 return (

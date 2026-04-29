@@ -101,7 +101,7 @@ export default function MarksEntry({
                                                     <div className="relative group/input">
                                                         <input
                                                             type="number"
-                                                            value={val}
+                                                            value={Number.isNaN(val) ? "" : val}
                                                             min={0}
                                                             max={max}
                                                             onChange={(e) => handleMarkChange(idx, qId, e.target.value)}

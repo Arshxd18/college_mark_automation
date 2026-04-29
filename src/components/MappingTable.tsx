@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Brain, Save, RotateCcw, ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle, Info, Download } from "lucide-react";
 import { COLabel, MappingCell, MappingDecision, PIEntry, POAttainmentRow, COMappingDoc } from "@/types";
 import { matchAllCOs, computePOAttainment, toggleCell, resetOverrides } from "@/lib/coPiMatcher";
 import { getCOWarning } from "@/lib/textProcessor";
 import { DEFAULT_PI_LIST, getPIsByPO } from "@/lib/piData";
-import { saveCOMapping } from "@/lib/firestoreService";
+import { saveCOMapping, getAttainmentResult } from "@/lib/firestoreService";
 import { exportMappingToExcel } from "@/lib/exportMappingExcel";
 import { cn } from "@/lib/utils";
 
@@ -33,11 +33,28 @@ interface MappingTableProps {
 function MappingCellUI({
     cell,
     onClick,
+    onHover,
+    onAcceptAI
 }: {
     cell: MappingCell;
     onClick: () => void;
+    onHover: () => void;
+    onAcceptAI: (level: number) => void;
 }) {
     const [showTip, setShowTip] = useState(false);
+
+    // AI Trigger with debounce
+    useEffect(() => {
+        if (!showTip) return;
+        if (cell.value !== null && cell.value !== 1) return;
+        if (cell.aiSuggestion && (cell.aiSuggestion.status === "loading" || cell.aiSuggestion.status === "done")) return;
+
+        const timer = setTimeout(() => {
+            onHover();
+        }, 400);
+
+        return () => clearTimeout(timer);
+    }, [showTip, cell, onHover]);
 
     const baseStyle = useMemo(() => {
         if (cell.overridden) return "bg-yellow-50 border-2 border-yellow-400 text-yellow-800";
@@ -47,7 +64,7 @@ function MappingCellUI({
         return "bg-gray-50 text-gray-400 border border-gray-100";
     }, [cell]);
 
-    const label = cell.value !== null ? cell.value : "-";
+    const label = cell.aiSuggestion?.status === "done" ? "💡" : cell.aiSuggestion?.status === "loading" ? "⏳" : cell.value !== null ? cell.value : "-";
     const fullLabel = cell.value !== null ? `Level ${cell.value}` : "Not Mapped";
 
     const confidenceLabel = cell.confidence >= 0.30 ? "HIGH" : 
@@ -88,7 +105,29 @@ function MappingCellUI({
                                 Common Tokens: <span className="text-blue-300">{cell.matchedWords.slice(0, 4).join(", ")}</span>
                             </div>
                         )}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+
+                        {cell.aiSuggestion?.status === "done" && (
+                            <div className="mt-3 p-2.5 bg-indigo-950 rounded border border-indigo-800 shadow-inner">
+                                <div className="text-indigo-400 font-bold mb-1.5 flex items-center gap-1 border-b border-indigo-800/50 pb-1">🧠 AI Insight</div>
+                                <div className="text-gray-300">Level: <span className="text-white font-bold">{cell.aiSuggestion.level}</span></div>
+                                <div className="text-gray-300">Confidence: <span className={cell.aiSuggestion.confidence === "high" ? "text-emerald-400 font-bold" : "text-yellow-400 font-bold"}>{cell.aiSuggestion.confidence.toUpperCase()}</span></div>
+                                
+                                <div className="mt-2 text-gray-400 font-medium text-[10px] uppercase">Reason:</div>
+                                <div className="text-gray-300 italic pointer-events-auto leading-relaxed text-[11px] bg-indigo-900/40 p-1.5 rounded">"{cell.aiSuggestion.reason}"</div>
+                                
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (cell.aiSuggestion) onAcceptAI(cell.aiSuggestion.level);
+                                    }}
+                                    className="mt-3 w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded text-center font-bold text-white shadow-sm pointer-events-auto transition-colors"
+                                >
+                                    Accept Suggestion
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 pointer-events-none" />
                     </div>
                 )}
             </div>
@@ -116,6 +155,29 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [expandedPO, setExpandedPO] = useState<number | null>(1);
+    const [isFinalized, setIsFinalized] = useState(initialDoc?.mappingLocked ?? false);
+    
+    // AI Cache Map and Throttler
+    const aiCache = useRef<Record<string, NonNullable<MappingCell["aiSuggestion"]>>>({});
+    const lastAiFetch = useRef<number>(0);
+
+    // Auto-pull global CO Config
+    useEffect(() => {
+        if (!batchYear || !subjectId) return;
+        const load = async () => {
+            try {
+                const res = await getAttainmentResult(batchYear, subjectId);
+                if (res?.coDescriptions) {
+                    setCoDescriptions(res.coDescriptions);
+                } else if (!initialDoc) {
+                    alert("⚠️ Course Outcomes not found in global registry schema. Please open the Dashboard Assessment Setup to definitively submit syllabus fields.");
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+        load();
+    }, [batchYear, subjectId, initialDoc]);
 
     const filledCOs = CO_KEYS.filter(co => coDescriptions[co] && coDescriptions[co].trim().length > 0).length;
 
@@ -145,10 +207,119 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
 
     // Toggle a cell
     const handleToggle = useCallback((co: COLabel, piId: string) => {
-        if (!matrix) return;
+        if (!matrix || isFinalized) return;
         setMatrix(prev => prev ? toggleCell(prev, co, piId) : prev);
         setSaved(false);
-    }, [matrix]);
+    }, [matrix, isFinalized]);
+
+    // AI suggestion fetch on hover
+    const handleHoverCell = useCallback(async (co: COLabel, piId: string) => {
+        if (!matrix || isFinalized) return;
+        const cell = matrix[co]?.[piId];
+        if (!cell || (cell.value !== null && cell.value !== 1)) return;
+        if (cell.aiSuggestion && cell.aiSuggestion.status !== "idle") return; // Already fetching or done
+
+        const coText = coDescriptions[co]?.trim();
+        const piText = piList.find(p => p.id === piId)?.descriptor?.trim();
+        if (!coText || !piText) return;
+
+        const cacheKey = `${coText}|||${piText}`;
+
+        // 1. Check Cache
+        if (aiCache.current[cacheKey]) {
+            setMatrix(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    [co]: {
+                        ...prev[co],
+                        [piId]: { ...prev[co][piId], aiSuggestion: aiCache.current[cacheKey] }
+                    }
+                };
+            });
+            return;
+        }
+
+        // Throttle Guard (Prevent Rapid API Flooding)
+        const now = Date.now();
+        if (now - lastAiFetch.current < 300) return;
+        lastAiFetch.current = now;
+
+        // 2. Set to Loading
+        setMatrix(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                [co]: {
+                    ...prev[co],
+                    [piId]: { ...prev[co][piId], aiSuggestion: { status: "loading", level: 0, confidence: "low", reason: "" } }
+                }
+            };
+        });
+
+        // 3. Fetch
+        try {
+            const res = await fetch("/api/ai-mapping", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ coText, piText })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed AI fetch");
+
+            const suggestion: NonNullable<MappingCell["aiSuggestion"]> = {
+                status: "done",
+                level: data.level,
+                reason: data.reason,
+                confidence: data.confidence
+            };
+
+            aiCache.current[cacheKey] = suggestion;
+
+            setMatrix(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    [co]: {
+                        ...prev[co],
+                        [piId]: { ...prev[co][piId], aiSuggestion: suggestion }
+                    }
+                };
+            });
+        } catch (e) {
+            console.error("AI Mapping Failure:", e);
+            setMatrix(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    [co]: {
+                        ...prev[co],
+                        [piId]: { ...prev[co][piId], aiSuggestion: { status: "error", level: 0, confidence: "low", reason: "" } }
+                    }
+                };
+            });
+        }
+    }, [matrix, coDescriptions, piList, isFinalized]);
+
+    const handleAcceptAI = useCallback((co: COLabel, piId: string, level: number) => {
+        if (!matrix || isFinalized) return;
+        setMatrix(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                [co]: {
+                    ...prev[co],
+                    [piId]: {
+                        ...prev[co][piId],
+                        value: level as MappingDecision,
+                        overridden: true,
+                        aiMeta: { used: true, source: "ai" }
+                    }
+                }
+            };
+        });
+        setSaved(false);
+    }, [matrix, isFinalized]);
 
     // Reset overrides
     const handleReset = useCallback(() => {
@@ -168,6 +339,30 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                 coDescriptions,
                 matrix,
                 poAttainment,
+                mappingLocked: isFinalized,
+                savedAt: new Date().toISOString(),
+            });
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setSaving(false);
+        }
+    }, [matrix, batchYear, subjectId, coDescriptions, poAttainment, isFinalized]);
+
+    const handleFinalize = useCallback(async () => {
+        if (!matrix) return;
+        setIsFinalized(true);
+        setSaving(true);
+        try {
+            await saveCOMapping({
+                batchYear,
+                subjectId,
+                coDescriptions,
+                matrix,
+                poAttainment,
+                mappingLocked: true,
                 savedAt: new Date().toISOString(),
             });
             setSaved(true);
@@ -203,7 +398,7 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                     </div>
                     <div>
                         <h2 className="font-bold text-gray-900">Course Outcome Descriptions</h2>
-                        <p className="text-xs text-gray-500">Enter the CO descriptions — the NLP engine will match them against Programme Indicators</p>
+                        <p className="text-xs text-gray-500">COs are formally managed in Assessment Setup. Return there to modify the global baseline.</p>
                     </div>
                     <div className="ml-auto text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
                         {filledCOs}/6 filled
@@ -217,11 +412,12 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                                 {CO_LABELS[co]}
                             </label>
                             <textarea
+                                disabled={true}
                                 rows={3}
                                 value={coDescriptions[co]}
                                 onChange={e => setCoDescriptions(prev => ({ ...prev, [co]: e.target.value }))}
                                 placeholder={`Describe what students will be able to do in ${CO_LABELS[co]}...`}
-                                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none bg-gray-50 placeholder:text-gray-300 transition-all"
+                                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 placeholder:text-gray-300 opacity-80 cursor-not-allowed resize-none transition-all"
                             />
                             {coDescriptions[co]?.trim() && (() => {
                                 const txtLength = coDescriptions[co].trim().length;
@@ -375,6 +571,8 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                                                                 key={co}
                                                                 cell={matrix[co]?.[pi.id] ?? { value: null, confidence: 0, matchedWords: [], overridden: false }}
                                                                 onClick={() => handleToggle(co, pi.id)}
+                                                                onHover={() => handleHoverCell(co, pi.id)}
+                                                                onAcceptAI={(lvl) => handleAcceptAI(co, pi.id, lvl)}
                                                             />
                                                         ))}
                                                     </tr>

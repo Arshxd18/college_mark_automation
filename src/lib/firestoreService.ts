@@ -130,6 +130,16 @@ export async function saveAttainmentResult(result: AttainmentResult): Promise<vo
     await setDoc(doc(attainmentResultsCol, id), result);
 }
 
+export async function updateCODescriptions(batchYear: string, subjectId: string, coDescriptions: Record<COLabel, string>): Promise<void> {
+    const id = resultDocId(batchYear, subjectId);
+    await setDoc(doc(attainmentResultsCol, id), {
+        batchYear,
+        subjectId,
+        coDescriptions,
+        lastUpdated: new Date().toISOString()
+    }, { merge: true });
+}
+
 export async function getAttainmentResult(
     batchYear: string,
     subjectId: string

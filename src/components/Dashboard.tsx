@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Student, Marks, ExamConfig, QuestionConfig, DEFAULT_QUESTION_CONFIG } from "@/types";
+import { Student, Marks, ExamConfig, QuestionConfig, DEFAULT_QUESTION_CONFIG, COLabel } from "@/types";
 import MarksEntry from "./MarksEntry";
 import COAnalysis from "./COAnalysis";
 import Visualizations from "./Visualizations";
 import CalculationReference from "./CalculationReference";
 import SetupSection from "./SetupSection";
 import { Download, BarChart3, Calculator, Table as TableIcon, BookOpen, Menu, X, CloudUpload, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { saveAssessment } from "@/lib/firestoreService";
+import { saveAssessment, updateCODescriptions } from "@/lib/firestoreService";
 import { parseExcelUpload } from "@/lib/excel-parser";
 
 import Header from "./Header";
@@ -23,6 +23,10 @@ export default function Dashboard() {
     const [saveError, setSaveError] = useState("");
     const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
     const [uploadError, setUploadError] = useState("");
+    const [coSaveStatus, setCoSaveStatus] = useState<SaveStatus>("idle");
+    const [coDescriptions, setCoDescriptions] = useState<Record<COLabel, string>>({
+        co1: "", co2: "", co3: "", co4: "", co5: "", co6: ""
+    });
 
     const [examConfig, setExamConfig] = useState<ExamConfig>({
         academicYear: "2025-2026",
@@ -144,6 +148,25 @@ export default function Dashboard() {
             setSaveError(err?.message || "Unknown error");
             setSaveStatus("error");
             setTimeout(() => setSaveStatus("idle"), 5000);
+        }
+    };
+
+    const handleSaveCOConfig = async () => {
+        if (!examConfig.batchYear.trim() || !examConfig.subjectId.trim()) {
+            alert("Please set a Batch Year and Subject ID before saving COs.");
+            return;
+        }
+
+        setCoSaveStatus("saving");
+        try {
+            await updateCODescriptions(examConfig.batchYear, examConfig.subjectId, coDescriptions);
+
+            setCoSaveStatus("success");
+            setTimeout(() => setCoSaveStatus("idle"), 3000);
+        } catch (err) {
+            console.error("Failed to save CO configuration:", err);
+            setCoSaveStatus("error");
+            setTimeout(() => setCoSaveStatus("idle"), 5000);
         }
     };
 
@@ -305,6 +328,10 @@ export default function Dashboard() {
                     uploadError={uploadError}
                     onSaveToFirebase={handleSaveToFirebase}
                     saveStatus={saveStatus}
+                    coDescriptions={coDescriptions}
+                    setCoDescriptions={setCoDescriptions}
+                    onSaveCOConfig={handleSaveCOConfig}
+                    coSaveStatus={coSaveStatus}
                 />
 
                 <div className="animate-in fade-in duration-500 mt-6">

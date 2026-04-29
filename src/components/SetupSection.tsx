@@ -28,6 +28,10 @@ interface SetupSectionProps {
     uploadError: string;
     onSaveToFirebase: () => void;
     saveStatus: "idle" | "saving" | "success" | "error";
+    coDescriptions: Record<COLabel, string>;
+    setCoDescriptions: React.Dispatch<React.SetStateAction<Record<COLabel, string>>>;
+    onSaveCOConfig: () => void;
+    coSaveStatus: "idle" | "saving" | "success" | "error";
 }
 
 export default function SetupSection({
@@ -43,6 +47,10 @@ export default function SetupSection({
     uploadError,
     onSaveToFirebase,
     saveStatus,
+    coDescriptions,
+    setCoDescriptions,
+    onSaveCOConfig,
+    coSaveStatus
 }: SetupSectionProps) {
 
     const handleQuestionConfigChange = (qId: string, field: "co" | "maxMark", value: any) => {
@@ -131,6 +139,42 @@ export default function SetupSection({
 
                     <div className="border-t border-gray-100 my-6"></div>
 
+                    {/* Master CO Configuration */}
+                    <div>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-md font-semibold text-gray-900">Course Outcomes (COs) Configuration</h3>
+                            <button
+                                onClick={onSaveCOConfig}
+                                disabled={coSaveStatus === "saving"}
+                                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md shadow-sm transition-all focus:outline-none ${coSaveStatus === "saving" ? "bg-violet-400 text-white cursor-not-allowed" : coSaveStatus === "error" ? "bg-red-600 text-white" : coSaveStatus === "success" ? "bg-emerald-600 text-white" : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}
+                            >
+                                {coSaveStatus === "saving" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                {coSaveStatus === "success" && <CheckCircle className="w-3.5 h-3.5" />}
+                                {coSaveStatus === "error" && <AlertCircle className="w-3.5 h-3.5" />}
+                                {coSaveStatus === "idle" && <CloudUpload className="w-3.5 h-3.5" />}
+                                {coSaveStatus === "success" ? "Saved!" : "Save CO Config"}
+                            </button>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">Define your syllabus text for each Course Outcome. This is permanently registered to the batch and subject, and will auto-populate across the Matrix page.</p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {CO_OPTIONS.map((co) => (
+                                <div key={co} className="flex flex-col">
+                                    <label className="text-[11px] font-bold text-gray-600 uppercase mb-1">{co}</label>
+                                    <textarea
+                                        className="w-full text-sm p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-gray-50"
+                                        placeholder={`Enter ${co.toUpperCase()} description...`}
+                                        rows={2}
+                                        value={coDescriptions[co] || ""}
+                                        onChange={(e) => setCoDescriptions(prev => ({ ...prev, [co]: e.target.value }))}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="border-t border-gray-100 my-6"></div>
+
                     {/* Question Configuration */}
                     <div>
                         <div className="flex justify-between items-center mb-4">
@@ -160,7 +204,7 @@ export default function SetupSection({
                                             <input
                                                 type="number"
                                                 min="1"
-                                                value={questionConfig[qId]?.maxMark}
+                                                value={Number.isNaN(questionConfig[qId]?.maxMark) ? "" : questionConfig[qId]?.maxMark}
                                                 onChange={(e) => handleQuestionConfigChange(qId, "maxMark", e.target.value)}
                                                 className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500"
                                             />

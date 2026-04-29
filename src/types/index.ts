@@ -89,16 +89,19 @@ export interface AssessmentDoc {
 export interface AttainmentResult {
   batchYear: string;
   subjectId: string;
-  coAttainmentAvg: COScores;       // IA (Internal avg) level per CO
-  unitTestLevel: COScores;          // Unit Test level per CO
-  assignmentLevel: COScores;        // Assignment level per CO
-  semesterLevel: COScores;          // Semester (SEE) level per CO
-  internalAttainment: COScores;
-  directAttainment: COScores;
-  indirectAttainment: COScores;
-  finalAttainment: COScores;
-  levels: Record<COLabel, number | "N/A">;
-  computedAt: string;
+  coDescriptions?: Record<COLabel, string>;
+
+  coAttainmentAvg?: COScores;       // IA (Internal avg) level per CO
+  unitTestLevel?: COScores;          // Unit Test level per CO
+  assignmentLevel?: COScores;        // Assignment level per CO
+  semesterLevel?: COScores;          // Semester (SEE) level per CO
+  internalAttainment?: COScores;
+  directAttainment?: COScores;
+  indirectAttainment?: COScores;
+  finalAttainment?: COScores;
+  levels?: Record<COLabel, number | "N/A">;
+  
+  computedAt?: string;
 }
 
 // ── CO–PO–PSO Mapping Types ──────────────────────────────────────
@@ -118,6 +121,16 @@ export interface MappingCell {
   matchedWords: string[];   // common tokens shown in tooltip
   overridden: boolean;      // true if faculty manually toggled
   boost: number;            // keyword inflation to visualize in UI
+  aiSuggestion?: {
+    level: 3 | 2 | 1 | 0;
+    reason: string;
+    confidence: "low" | "medium" | "high";
+    status: "idle" | "loading" | "done" | "error";
+  };
+  aiMeta?: {
+    used: boolean;        // true if accepted
+    source: "nlp" | "ai";
+  };
 }
 
 export interface POAttainmentRow {
@@ -133,6 +146,7 @@ export interface COMappingDoc {
   coDescriptions: Record<COLabel, string>;
   matrix: Record<COLabel, Record<string, MappingCell>>;
   poAttainment: POAttainmentRow[];
+  mappingLocked?: boolean;
   savedAt: string;
 }
 
