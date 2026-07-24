@@ -1,6 +1,77 @@
 import { COResult, Marks, QuestionConfig, COLabel } from "@/types";
 
+export const UT_DEFINITIONS = [
+    { id: 1, label: "UT1", keys: ["u1", "u2"] },
+    { id: 2, label: "UT2", keys: ["u3", "u4", "u5"] },
+    { id: 3, label: "UT3", keys: ["u6", "u7"] },
+    { id: 4, label: "UT4", keys: ["u8", "u9", "u10"] },
+    { id: 5, label: "UT5", keys: ["u11", "u12"] },
+];
+
+export const getFilteredUTMarksAndConfig = (
+    marks: Marks,
+    config: QuestionConfig
+): { filteredMarks: Marks; filteredConfig: QuestionConfig; excludedUTs: string[] } => {
+    // Score each UT — only count UTs that have at least one configured key present
+    const utScores = UT_DEFINITIONS.map(ut => {
+        let obtained = 0;
+        let max = 0;
+        ut.keys.forEach(k => {
+            // A UT is "available" if it has a config entry
+            if (config[k]) {
+                max += config[k].maxMark ?? 0;
+                const m = marks[k];
+                if (m !== undefined && m !== null) obtained += m;
+            }
+        });
+        const pct = max > 0 ? (obtained / max) * 100 : -1; // -1 = no data
+        return { ...ut, obtained, max, pct, hasData: max > 0 };
+    });
+
+    // Only consider UTs that actually have data in the config
+    const availableUTs = utScores.filter(ut => ut.hasData);
+
+    // Keep top min(3, total available) by percentage — no exclusion if ≤3 UTs present
+    const keepCount = Math.min(3, availableUTs.length);
+    const sorted = [...availableUTs].sort((a, b) => b.pct - a.pct);
+    const keptUTs = sorted.slice(0, keepCount);
+    const excludedUTs = sorted.slice(keepCount).map(ut => ut.label);
+
+    const keptKeys = new Set(keptUTs.flatMap(ut => ut.keys));
+
+    const filteredMarks: Marks = {};
+    const filteredConfig: QuestionConfig = {};
+
+    Object.keys(config).forEach(k => {
+        if (k.startsWith('u')) {
+            if (keptKeys.has(k)) {
+                filteredConfig[k] = config[k];
+                if (marks[k] !== undefined && marks[k] !== null) {
+                    filteredMarks[k] = marks[k];
+                }
+            }
+        } else {
+            filteredConfig[k] = config[k];
+            if (marks[k] !== undefined && marks[k] !== null) {
+                filteredMarks[k] = marks[k];
+            }
+        }
+    });
+
+    return { filteredMarks, filteredConfig, excludedUTs };
+};
+
 export const calculateCOAttainment = (marks: Marks, config: QuestionConfig): COResult => {
+    const hasUTKeys = Object.keys(config).some(k => k.startsWith('u'));
+    let currentMarks = marks;
+    let currentConfig = config;
+
+    if (hasUTKeys) {
+        const filtered = getFilteredUTMarksAndConfig(marks, config);
+        currentMarks = filtered.filteredMarks;
+        currentConfig = filtered.filteredConfig;
+    }
+
     const result: COResult = {
         co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0,
         total: 0,
@@ -10,8 +81,8 @@ export const calculateCOAttainment = (marks: Marks, config: QuestionConfig): COR
     let totalMarks = 0;
 
     // Calculate CO totals
-    Object.keys(marks).forEach((qId) => {
-        let mark = marks[qId] || 0;
+    Object.keys(currentMarks).forEach((qId) => {
+        let mark = currentMarks[qId] || 0;
 
         // --- Internal Choice Logic (Part B: 11-15) ---
         // If this is an 'a' or 'b' question, check if its pair exists and if we should count this one.
@@ -22,7 +93,7 @@ export const calculateCOAttainment = (marks: Marks, config: QuestionConfig): COR
             const pairPart = part === 'a' ? 'b' : 'a';
             const pairId = `q${num}${pairPart}`;
 
-            const pairMark = marks[pairId] || 0;
+            const pairMark = currentMarks[pairId] || 0;
 
             // Rule: Take MAX of the pair.
             // If both present, only add the higher one to the total/CO. 
@@ -36,7 +107,7 @@ export const calculateCOAttainment = (marks: Marks, config: QuestionConfig): COR
             if (mark === pairMark && part === 'b') return;
         }
 
-        const qConfig = config[qId];
+        const qConfig = currentConfig[qId];
         if (qConfig) {
             const coId = qConfig.co;
             if (result[coId] !== undefined) {
@@ -49,7 +120,7 @@ export const calculateCOAttainment = (marks: Marks, config: QuestionConfig): COR
     result.total = totalMarks;
 
     // Calculate percentages
-    const coMaxMarks = calculateCOMaxMarks(config, marks); // Pass marks to determine which max to count
+    const coMaxMarks = calculateCOMaxMarks(currentConfig, currentMarks); // Pass marks to determine which max to count
 
     (["co1", "co2", "co3", "co4", "co5", "co6"] as const).forEach((co) => {
         const max = coMaxMarks[co];
@@ -65,9 +136,16 @@ export const calculateCOAttainment = (marks: Marks, config: QuestionConfig): COR
 
 export const calculateCOMaxMarks = (config: QuestionConfig, marks?: Marks) => {
     const maxMarks = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
+    const hasUTKeys = Object.keys(config).some(k => k.startsWith('u'));
+    let currentConfig = config;
 
-    Object.keys(config).forEach((qId) => {
-        const { co, maxMark } = config[qId];
+    if (hasUTKeys && marks) {
+        const filtered = getFilteredUTMarksAndConfig(marks, config);
+        currentConfig = filtered.filteredConfig;
+    }
+
+    Object.keys(currentConfig).forEach((qId) => {
+        const { co, maxMark } = currentConfig[qId];
 
         // Logic for Max Marks:
         // We need to know WHICH question was attempted to add its max mark to the denominator.

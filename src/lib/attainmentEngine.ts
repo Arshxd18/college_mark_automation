@@ -211,7 +211,9 @@ function docCoLevel(doc: AssessmentDoc | undefined): Record<COLabel, number> {
  */
 export function computeAttainment(
     docs: AssessmentDoc[],
-    indirectAttainment: COScores
+    indirectAttainment: COScores,
+    utWeight: number = 0.15,
+    assignWeight: number = 0.25,
 ): {
     coAttainmentAvg: COScores;       // CO Average level per CO (IA)
     unitTestLevel: COScores;          // Unit Test level per CO
@@ -272,7 +274,7 @@ export function computeAttainment(
         }
 
         // Formula: Level arithmetic (0–3 scale throughout)
-        internal[co] = parseFloat((coIA[co] * 0.60 + coUT[co] * 0.15 + coAS[co] * 0.25).toFixed(4));
+        internal[co] = parseFloat((coIA[co] * 0.60 + coUT[co] * utWeight + coAS[co] * assignWeight).toFixed(4));
         direct[co] = parseFloat((coSEM[co] * 0.60 + internal[co] * 0.40).toFixed(4));
         const ind = indirectAttainment[co] ?? 0;
         final_[co] = parseFloat((direct[co] * 0.90 + ind * 0.10).toFixed(4));

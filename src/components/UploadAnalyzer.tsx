@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { Upload, FileSpreadsheet, CheckCircle, AlertTriangle, Download, ArrowRight, Loader2 } from "lucide-react";
 import { parseExcelUpload, ParsedUploadData } from "@/lib/excel-parser";
-import { calculateCOAttainment } from "@/lib/calculations";
+import { calculateCOAttainment, calculateCOMaxMarks } from "@/lib/calculations";
 import { cn } from "@/lib/utils";
 
 export default function UploadAnalyzer() {
@@ -49,13 +49,28 @@ export default function UploadAnalyzer() {
     const coMaxMarks = useMemo(() => {
         if (!data) return null;
         const config = data.questionConfig;
-        const staticMaxMarks = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
-        Object.entries(config).forEach(([qId, conf]) => {
-            if (qId.endsWith('b')) return;
-            staticMaxMarks[conf.co] += conf.maxMark;
-        });
-        return staticMaxMarks;
-    }, [data]);
+        const isUT = testType === "Unit Test" || Object.keys(config).some(k => k.startsWith('u'));
+        if (isUT && data.students.length > 0) {
+            const totals = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
+            data.students.forEach(student => {
+                const studentMax = calculateCOMaxMarks(config, student.marks);
+                CO_LABELS.forEach(co => {
+                    totals[co] += studentMax[co];
+                });
+            });
+            CO_LABELS.forEach(co => {
+                totals[co] = parseFloat((totals[co] / data.students.length).toFixed(2));
+            });
+            return totals;
+        } else {
+            const staticMaxMarks = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
+            Object.entries(config).forEach(([qId, conf]) => {
+                if (qId.endsWith('b')) return;
+                staticMaxMarks[conf.co] += conf.maxMark;
+            });
+            return staticMaxMarks;
+        }
+    }, [data, testType]);
 
     const handleExport = async () => {
         if (!data || !results) return;

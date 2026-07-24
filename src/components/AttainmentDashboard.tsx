@@ -69,6 +69,10 @@ export default function AttainmentDashboard() {
     const [computing, setComputing] = useState(false);
     const [saved, setSaved] = useState(false);
 
+    // Internal formula weights (CO Average is always 60%)
+    const [utWeightPct, setUtWeightPct] = useState(15);          // default 15%
+    const assignWeightPct = Math.max(0, 40 - utWeightPct);       // auto: 40% - UT%
+
     // Load batch years on mount
     useEffect(() => {
         setLoadingBatches(true);
@@ -124,7 +128,7 @@ export default function AttainmentDashboard() {
                 finalAttainment,
                 levels,
                 missing: miss,
-            } = computeAttainment(assessments, indirect);
+            } = computeAttainment(assessments, indirect, utWeightPct / 100, assignWeightPct / 100);
             setMissing(miss);
 
             const attainmentResult: AttainmentResult = {
@@ -277,6 +281,79 @@ export default function AttainmentDashboard() {
                 </div>
             )}
 
+            {/* Internal Formula Weight Config */}
+            {selectedSubject && !loadingAssessments && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                    <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-1">Internal Formula Weights</h3>
+                    <p className="text-xs text-gray-500 mb-4">
+                        CO Average is fixed at <strong>60%</strong>. Set the UT weight — Assignment auto-fills the remaining 40%.
+                    </p>
+                    <div className="flex flex-wrap items-end gap-6">
+
+                        {/* CO Average — locked */}
+                        <div className="flex flex-col items-center">
+                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1">CO Average</label>
+                            <div className="flex items-center gap-1 px-4 py-2 rounded-lg bg-gray-100 border border-gray-200 text-gray-500 font-bold text-sm cursor-not-allowed">
+                                60<span className="text-xs ml-0.5">%</span>
+                            </div>
+                            <span className="text-[10px] text-gray-400 mt-1">Fixed (constant)</span>
+                        </div>
+
+                        <div className="text-gray-400 font-bold text-lg pb-5">+</div>
+
+                        {/* UT Weight — editable */}
+                        <div className="flex flex-col items-center">
+                            <label htmlFor="ut-weight-input" className="text-xs font-semibold text-indigo-600 uppercase mb-1">UT %</label>
+                            <div className="flex items-center border-2 border-indigo-400 rounded-lg overflow-hidden shadow-sm">
+                                <input
+                                    id="ut-weight-input"
+                                    type="number"
+                                    min={0} max={40} step={1}
+                                    value={utWeightPct}
+                                    onChange={(e) => setUtWeightPct(Math.min(40, Math.max(0, parseInt(e.target.value) || 0)))}
+                                    className="w-16 px-2 py-2 text-sm text-center font-bold text-indigo-700 focus:outline-none bg-indigo-50"
+                                />
+                                <span className="px-2 text-sm font-semibold text-indigo-500 bg-indigo-50 border-l-2 border-indigo-300">%</span>
+                            </div>
+                            <span className="text-[10px] text-indigo-400 mt-1">Editable</span>
+                        </div>
+
+                        <div className="text-gray-400 font-bold text-lg pb-5">+</div>
+
+                        {/* Assignment Weight — auto-computed */}
+                        <div className="flex flex-col items-center">
+                            <label className="text-xs font-semibold text-violet-600 uppercase mb-1">Assignment %</label>
+                            <div className="flex items-center border-2 border-violet-300 rounded-lg overflow-hidden bg-violet-50">
+                                <div className="w-16 px-2 py-2 text-sm text-center font-bold text-violet-700">
+                                    {assignWeightPct}
+                                </div>
+                                <span className="px-2 text-sm font-semibold text-violet-500 bg-violet-50 border-l-2 border-violet-300">%</span>
+                            </div>
+                            <span className="text-[10px] text-violet-400 mt-1">Auto (40 − UT%)</span>
+                        </div>
+
+                        <div className="text-gray-400 font-bold text-lg pb-5">=</div>
+
+                        {/* Total check */}
+                        <div className="flex flex-col items-center">
+                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1">Total</label>
+                            <div className={`flex items-center px-4 py-2 rounded-lg border-2 font-bold text-sm ${
+                                (60 + utWeightPct + assignWeightPct) === 100
+                                    ? "bg-emerald-50 border-emerald-400 text-emerald-700"
+                                    : "bg-red-50 border-red-400 text-red-700"
+                            }`}>
+                                {60 + utWeightPct + assignWeightPct}<span className="text-xs ml-0.5">%</span>
+                            </div>
+                            <span className="text-[10px] text-gray-400 mt-1">Must be 100%</span>
+                        </div>
+                    </div>
+
+                    <p className="mt-4 text-xs text-gray-400 italic font-mono bg-gray-50 border rounded px-3 py-2">
+                        Internal = CO_Avg × 60% + UT × {utWeightPct}% + Assignment × {assignWeightPct}%
+                    </p>
+                </div>
+            )}
+
             {/* Results Table */}
             {result && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -318,7 +395,7 @@ export default function AttainmentDashboard() {
                                     {CO_KEYS.map(co => (
                                         <td key={co} className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300">{Math.round(result.unitTestLevel?.[co] ?? 0)}</td>
                                     ))}
-                                    <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300">15%</td>
+                                    <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300 font-semibold text-indigo-700">{utWeightPct}%</td>
                                     <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300 bg-gray-50"></td>
                                     <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-gray-50"></td>
                                 </tr>
@@ -329,7 +406,7 @@ export default function AttainmentDashboard() {
                                     {CO_KEYS.map(co => (
                                         <td key={co} className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300">{Math.round(result.assignmentLevel?.[co] ?? 0)}</td>
                                     ))}
-                                    <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300">25%</td>
+                                    <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300 font-semibold text-violet-700">{assignWeightPct}%</td>
                                     <td className="px-2 py-1.5 text-center text-xs text-gray-800 border border-gray-300 bg-gray-50"></td>
                                     <td className="px-2 py-1.5 text-center text-xs border border-gray-300 bg-gray-50"></td>
                                 </tr>

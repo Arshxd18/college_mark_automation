@@ -150,8 +150,6 @@ function MappingPageInner() {
 
 export default function MappingPage() {
     return (
-        <AuthGuard>
-            <MappingPageInner />
-        </AuthGuard>
+        <MappingPageInner />
     );
 }

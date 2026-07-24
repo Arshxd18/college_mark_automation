@@ -85,7 +85,7 @@ export default function SetupSection({
                 <div className="p-6 space-y-8 animate-in slide-in-from-top-4 fade-in duration-300">
 
                     {/* Exam Configuration */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {/* Academic Year */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
@@ -135,7 +135,45 @@ export default function SetupSection({
                                 ))}
                             </select>
                         </div>
+
+                        {/* Section */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Section
+                                <span className="ml-1 text-xs text-indigo-500 font-normal">(e.g. A, B, C)</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={examConfig.section ?? ""}
+                                onChange={(e) => setExamConfig({ ...examConfig, section: e.target.value.toUpperCase() })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="e.g. A"
+                            />
+                        </div>
+
+                        {/* Faculty Name */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Faculty Name
+                                <span className="ml-1 text-xs text-indigo-500 font-normal">(Course Handler)</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={examConfig.facultyName ?? ""}
+                                onChange={(e) => {
+                                    // Normalize to Title Case to prevent duplicates like "dr joshi" vs "DR JOSHI"
+                                    const titleCase = e.target.value
+                                        .split(" ")
+                                        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                                        .join(" ");
+                                    setExamConfig({ ...examConfig, facultyName: titleCase });
+                                }}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="e.g. Dr. A. Kumar"
+                            />
+                        </div>
                     </div>
+
 
                     <div className="border-t border-gray-100 my-6"></div>
 

@@ -32,6 +32,8 @@ export interface ExamConfig {
   batchYear: string;       // e.g. "2023-2027"
   subjectId: string;       // e.g. "23AD1501"
   testType: TestType;
+  section: string;         // e.g. "A", "B"
+  facultyName: string;     // e.g. "Dr. A. Kumar"
 }
 
 export interface QuestionConfig {

@@ -33,6 +33,8 @@ export default function Dashboard() {
         batchYear: "2023-2027",
         subjectId: "",
         testType: "Internal 1",
+        section: "",
+        facultyName: "",
     });
 
     const [questionConfig, setQuestionConfig] = useState<QuestionConfig>(DEFAULT_QUESTION_CONFIG);

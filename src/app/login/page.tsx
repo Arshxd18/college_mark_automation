@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Lock, ShieldCheck, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
@@ -17,7 +18,7 @@ export default function LoginPage() {
 
         if (ALLOWED_EMAILS.includes(email.trim().toLowerCase())) {
             localStorage.setItem("co_auth_user", email.trim().toLowerCase());
-            router.push("/");
+            router.push("/admin");
         } else {
             setError("Access verification failed. Authorized personnel only.");
         }
@@ -77,6 +78,12 @@ export default function LoginPage() {
                         >
                             VERIFY IDENTITY
                         </button>
+
+                        <div className="text-center mt-3">
+                            <Link href="/" className="text-xs font-semibold text-gray-500 hover:text-indigo-600 transition-colors">
+                                ← Back to Dashboard
+                            </Link>
+                        </div>
                     </form>
 
                     <div className="mt-8 pt-6 border-t border-gray-100 text-center">

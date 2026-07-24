@@ -43,7 +43,23 @@ export async function POST(request: Request) {
         addPartRow("PART-B (b) CO totals", partTotals.partB_b);
 
         // Total CO Maximum
-        const coMax = calculateCOMaxMarks(questionConfig);
+        let coMax: Record<string, number> = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
+        const isUT = testType === "Unit Test" || Object.keys(questionConfig).some(k => k.startsWith('u'));
+        if (isUT && students.length > 0) {
+            const totals = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
+            students.forEach((s: Student) => {
+                const studentMax = calculateCOMaxMarks(questionConfig, s.marks);
+                coLabels.forEach(co => {
+                    totals[co] += studentMax[co];
+                });
+            });
+            coLabels.forEach(co => {
+                coMax[co] = parseFloat((totals[co] / students.length).toFixed(2));
+            });
+        } else {
+            coMax = calculateCOMaxMarks(questionConfig) as any;
+        }
+
         const totalMaxRow = [
             "TOTAL CO Maximum",
             Object.values(coMax).reduce((a: number, b: number) => a + b, 0),

@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Upload, LayoutDashboard, LogOut, TrendingUp, Network } from "lucide-react";
+import { Upload, LayoutDashboard, LogOut, TrendingUp, Network, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Header() {
@@ -12,7 +12,7 @@ export default function Header() {
 
     const handleLogout = () => {
         localStorage.removeItem("co_auth_user");
-        router.push("/login");
+        router.push("/");
     };
 
     return (
@@ -54,6 +54,20 @@ export default function Header() {
                         <span className="hidden sm:inline">Attainment</span>
                     </Link>
 
+                    {/* Admin Link */}
+                    <Link
+                        href="/admin"
+                        className={cn(
+                            "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all",
+                            pathname === "/admin"
+                                ? "bg-indigo-100 text-indigo-700"
+                                : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
+                        )}
+                    >
+                        <ShieldCheck className="w-4 h-4" />
+                        <span className="hidden sm:inline">Admin</span>
+                    </Link>
+
                     {/* Mapping Link */}
                     <Link
                         href="/mapping"
@@ -85,13 +99,13 @@ export default function Header() {
                     )}
 
                     {/* Logout Button */}
-                    <button
+                    {/* <button
                         onClick={handleLogout}
                         className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Logout"
                     >
                         <LogOut className="w-5 h-5" />
-                    </button>
+                    </button> */}
                 </div>
             </div>
         </header>

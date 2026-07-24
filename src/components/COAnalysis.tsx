@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { Student, QuestionConfig, TestType } from "@/types";
-import { calculateCOAttainment, getPartWiseTotals, calculateCOMaxMarks } from "@/lib/calculations";
+import { calculateCOAttainment, getPartWiseTotals, calculateCOMaxMarks, getFilteredUTMarksAndConfig, UT_DEFINITIONS } from "@/lib/calculations";
 import { computeAssessmentCO } from "@/lib/attainmentEngine";
 import { cn } from "@/lib/utils";
 
@@ -26,29 +26,58 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
     const weight = WEIGHT_BY_TYPE[testType] ?? 1;
     const isWeighted = weight !== 1;
 
-    const partWiseTotals = useMemo(() => getPartWiseTotals(questionConfig), [questionConfig]);
+    const CO_LABELS = ["co1", "co2", "co3", "co4", "co5", "co6"] as const;
 
     const coMaxMarks = useMemo(() => {
-        const staticMaxMarks = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
-        Object.entries(questionConfig).forEach(([qId, conf]) => {
-            if (qId.endsWith('b')) return;
-            staticMaxMarks[conf.co] += conf.maxMark;
-        });
-        return staticMaxMarks;
-    }, [questionConfig]);
+        const isUT = testType === "Unit Test" || Object.keys(questionConfig).some(k => k.startsWith('u'));
+        if (isUT && students.length > 0) {
+            const totals = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
+            students.forEach(student => {
+                const studentMax = calculateCOMaxMarks(questionConfig, student.marks);
+                CO_LABELS.forEach(co => {
+                    totals[co] += studentMax[co];
+                });
+            });
+            CO_LABELS.forEach(co => {
+                totals[co] = parseFloat((totals[co] / students.length).toFixed(2));
+            });
+            return totals;
+        } else {
+            const staticMaxMarks = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
+            Object.entries(questionConfig).forEach(([qId, conf]) => {
+                if (qId.endsWith('b')) return;
+                staticMaxMarks[conf.co] += conf.maxMark;
+            });
+            return staticMaxMarks;
+        }
+    }, [students, questionConfig, testType]);
+
+    const partWiseTotals = useMemo(() => getPartWiseTotals(questionConfig), [questionConfig]);
+
+    const isUT = testType === "Unit Test" || Object.keys(questionConfig).some(k => k.startsWith('u'));
 
     const studentResults = useMemo(() => {
-        return students.map(student => ({
-            ...student,
-            results: calculateCOAttainment(student.marks, questionConfig)
-        }));
-    }, [students, questionConfig]);
+        return students.map(student => {
+            const excludedUTs: string[] = isUT
+                ? getFilteredUTMarksAndConfig(student.marks, questionConfig).excludedUTs
+                : [];
+            return {
+                ...student,
+                results: calculateCOAttainment(student.marks, questionConfig),
+                excludedUTs,
+            };
+        });
+    }, [students, questionConfig, isUT]);
+
+    // How many UTs are present in the config (to show correct banner message)
+    const availableUTCount = useMemo(() => {
+        if (!isUT) return 0;
+        return UT_DEFINITIONS.filter(ut => ut.keys.some(k => questionConfig[k])).length;
+    }, [questionConfig, isUT]);
 
     const { attainment } = useMemo(() => {
         return computeAssessmentCO(students, questionConfig, testType);
     }, [students, questionConfig, testType]);
-
-    const CO_LABELS = ["co1", "co2", "co3", "co4", "co5", "co6"] as const;
 
     // Weighted label for column header
     const pctLabel = isWeighted
@@ -62,10 +91,22 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
         <div className="space-y-6">
             {isWeighted && (
                 <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 text-sm text-indigo-800 flex items-center gap-2">
-                    <span className="font-bold">ℹ️ Weighted View:</span>
+                    <span className="font-bold">Weighted View:</span>
                     <span>
                         Percentages are scaled by the <strong>{testType}</strong> contribution weight
                         &nbsp;({Math.round(weight * 100)}%). Formula: <code className="bg-white px-1 rounded">(CO% × {weight})</code>
+                    </span>
+                </div>
+            )}
+            {/* Unit Test Top-3 info banner */}
+            {isUT && students.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+                    <span className="font-bold shrink-0 mt-0.5">Top-{Math.min(3, availableUTCount)} Selection Active:</span>
+                    <span>
+                        {availableUTCount <= 3
+                            ? <>All <strong>{availableUTCount} Unit Test{availableUTCount !== 1 ? 's' : ''}</strong> present are used for CO attainment (no exclusion).</>
+                            : <>Each student&apos;s <strong>top 3 of {availableUTCount} Unit Tests</strong> (by % score) are used. The lowest {availableUTCount - 3} test{availableUTCount - 3 > 1 ? 's' : ''} are excluded — see the <em>Excluded UTs</em> column.
+                            </>}
                     </span>
                 </div>
             )}
@@ -75,6 +116,9 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                         <thead className="bg-indigo-50/50 text-indigo-900 font-semibold backdrop-blur-md">
                             <tr>
                                 <th rowSpan={2} className="p-4 border-b-2 border-r border-indigo-100 sticky left-0 z-20 bg-white/80 backdrop-blur-md">Details</th>
+                                {isUT && availableUTCount > 3 && (
+                                    <th rowSpan={2} className="p-4 border-b-2 border-r border-indigo-100 text-center text-xs font-bold text-rose-700 bg-rose-50/60 whitespace-nowrap">Excluded UTs</th>
+                                )}
                                 <th colSpan={7} className="p-2 border-b border-r border-indigo-100 text-center bg-indigo-100/30">Details of Marks Allocated for COs</th>
                                 <th colSpan={7} className="p-2 border-b border-indigo-100 text-center bg-indigo-100/30">{pctLabel}</th>
                             </tr>
@@ -153,6 +197,23 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                                         {idx + 1}. {s.regNo} - {s.name}
                                     </td>
 
+                                    {/* Excluded UTs column — only shown when UT mode with >3 tests */}
+                                    {isUT && availableUTCount > 3 && (
+                                        <td className="p-2 border-r border-indigo-50 text-center bg-rose-50/40">
+                                            {s.excludedUTs.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1 justify-center">
+                                                    {s.excludedUTs.map(ut => (
+                                                        <span key={ut} className="px-2 py-0.5 rounded text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200">
+                                                            {ut}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-300 text-xs">—</span>
+                                            )}
+                                        </td>
+                                    )}
+
                                     {/* Raw CO Totals */}
                                     <td className="p-3 border-r border-indigo-50 text-center font-semibold bg-gray-50/30">
                                         {s.results.total}
@@ -186,8 +247,8 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                                 </tr>
                             ))}
 
-                            {/* Attainment Summary Rows — CO Average only */}
-                            {testType === "CO Average" && (<>
+                            {/* Attainment Summary Rows — CO Average and Unit Test */}
+                            {(testType === "CO Average" || testType === "Unit Test") && (<>
                             <tr>
                                 <td colSpan={2} className="p-3 border-r border-indigo-50 font-semibold bg-gray-50/50 sticky left-0 text-gray-700">No of Students Attended</td>
                                 {CO_LABELS.map(co => (
