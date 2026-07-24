@@ -57,31 +57,79 @@ function parseUnitTest(json: any[][], testType: string): ParsedUploadData {
     const qConfig: QuestionConfig = {};
     const students: any[] = [];
 
-    // Row 2 (index 1) cols 3 to 14 have COs
-    // Row 4 (index 3) cols 27 to 38 have Max Marks
+    // Row 0 has the UT headers (e.g. Unit Test 1, Unit Test 2, etc.)
+    // Row 1 has the CO headers (CO 1, CO 2, CO 3, etc.)
+    // Students start at Row 2 (index 2)
     const coRow = json[1] || [];
-    const maxMarksRow = json[3] || [];
 
-    // Config Extraction
-    for (let c = 3; c <= 14; c++) {
+    // Helper to get fallback/standard max marks if the column has marks
+    const getStandardMaxMark = (coLabel: string): number => {
+        const co = coLabel.trim().toUpperCase().replace(/\s+/g, "");
+        if (co === "CO1" || co === "CO2" || co === "CO5" || co === "CO6") return 20;
+        if (co === "CO3") return 13;
+        if (co === "CO4") return 14;
+        return 20; // default fallback
+    };
+
+    // Columns 3 to 32 contain the 5 Unit Tests and their 6 CO columns
+    // Check which columns actually have at least one numeric mark.
+    const activeCols: number[] = [];
+    const colMaxs: Record<number, number> = {};
+
+    // Find where student rows actually end (they end when NAME is empty/null or not a string)
+    let lastStudentRow = 2;
+    while (lastStudentRow < json.length) {
+        const r = json[lastStudentRow];
+        if (!r || !r[2] || r[2].toString().trim() === "") {
+            break;
+        }
+        lastStudentRow++;
+    }
+
+    for (let c = 3; c <= 32; c++) {
+        let maxObtained = 0;
+        let hasMark = false;
+        for (let r = 2; r < lastStudentRow; r++) {
+            const val = json[r]?.[c];
+            if (val !== undefined && val !== null && val !== "") {
+                const num = Number(val);
+                if (!isNaN(num)) {
+                    hasMark = true;
+                    if (num > maxObtained) maxObtained = num;
+                }
+            }
+        }
+        if (hasMark) {
+            activeCols.push(c);
+            colMaxs[c] = maxObtained;
+        }
+    }
+
+    // Configure active columns in qConfig
+    activeCols.forEach((c) => {
         const coLabel = coRow[c];
-        const maxMark = maxMarksRow[c + 24]; // offset by 24 columns in template
-
-        if (coLabel && maxMark) {
+        if (coLabel) {
             const normalizedCo = coLabel.toString().toLowerCase().replace(/[^a-z0-9]/g, '') as COLabel;
             if (normalizedCo.startsWith('co')) {
-                qConfig[`u${c - 2}`] = {
-                    maxMark: Number(maxMark),
+                // Columns 3-8: UT1, 9-14: UT2, 15-20: UT3, 21-26: UT4, 27-32: UT5
+                const utNum = Math.floor((c - 3) / 6) + 1;
+                const key = `u${utNum}_${normalizedCo}`;
+                
+                const stdMax = getStandardMaxMark(coLabel);
+                const maxMark = Math.max(stdMax, colMaxs[c] || 0);
+
+                qConfig[key] = {
+                    maxMark: maxMark,
                     co: normalizedCo
                 };
             }
         }
-    }
+    });
 
-    // Students Extraction
-    for (let i = 4; i < json.length; i++) {
-        const row = json[i];
-        if (!row || !Array.isArray(row) || !row[0]) continue;
+    // Extract Students and Marks
+    for (let r = 2; r < lastStudentRow; r++) {
+        const row = json[r];
+        if (!row || !Array.isArray(row)) continue;
 
         const regNo = row[1];
         const name = row[2];
@@ -89,17 +137,28 @@ function parseUnitTest(json: any[][], testType: string): ParsedUploadData {
 
         const student: any = {
             slNo: students.length + 1,
-            regNo: String(regNo),
-            name: String(name),
+            regNo: String(regNo).trim(),
+            name: String(name).trim(),
             marks: {}
         };
 
-        for (let c = 3; c <= 14; c++) {
-            const mark = row[c];
-            if (mark !== undefined && mark !== null && mark !== "") {
-                student.marks[`u${c - 2}`] = Number(mark);
+        activeCols.forEach((c) => {
+            const coLabel = coRow[c];
+            if (coLabel) {
+                const normalizedCo = coLabel.toString().toLowerCase().replace(/[^a-z0-9]/g, '') as COLabel;
+                if (normalizedCo.startsWith('co')) {
+                    const utNum = Math.floor((c - 3) / 6) + 1;
+                    const key = `u${utNum}_${normalizedCo}`;
+                    const mark = row[c];
+                    if (mark !== undefined && mark !== null && mark !== "") {
+                        const num = Number(mark);
+                        if (!isNaN(num)) {
+                            student.marks[key] = num;
+                        }
+                    }
+                }
             }
-        }
+        });
         students.push(student);
     }
 

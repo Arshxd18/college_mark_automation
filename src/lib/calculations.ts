@@ -1,11 +1,11 @@
 import { COResult, Marks, QuestionConfig, COLabel } from "@/types";
 
 export const UT_DEFINITIONS = [
-    { id: 1, label: "UT1", keys: ["u1", "u2"] },
-    { id: 2, label: "UT2", keys: ["u3", "u4", "u5"] },
-    { id: 3, label: "UT3", keys: ["u6", "u7"] },
-    { id: 4, label: "UT4", keys: ["u8", "u9", "u10"] },
-    { id: 5, label: "UT5", keys: ["u11", "u12"] },
+    { id: 1, label: "UT1", keys: ["u1_co1", "u1_co2", "u1_co3", "u1_co4", "u1_co5", "u1_co6"] },
+    { id: 2, label: "UT2", keys: ["u2_co1", "u2_co2", "u2_co3", "u2_co4", "u2_co5", "u2_co6"] },
+    { id: 3, label: "UT3", keys: ["u3_co1", "u3_co2", "u3_co3", "u3_co4", "u3_co5", "u3_co6"] },
+    { id: 4, label: "UT4", keys: ["u4_co1", "u4_co2", "u4_co3", "u4_co4", "u4_co5", "u4_co6"] },
+    { id: 5, label: "UT5", keys: ["u5_co1", "u5_co2", "u5_co3", "u5_co4", "u5_co5", "u5_co6"] },
 ];
 
 export const getFilteredUTMarksAndConfig = (
