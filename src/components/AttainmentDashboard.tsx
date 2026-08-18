@@ -170,7 +170,7 @@ export default function AttainmentDashboard() {
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-8 text-center">
                 <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
                 <h3 className="font-semibold text-amber-800">No Data Found</h3>
-                <p className="text-sm text-amber-600 mt-1">Please save some assessments to Firebase first using the Dashboard.</p>
+                <p className="text-sm text-amber-600 mt-1">Please save some assessments to Supabase first using the Dashboard.</p>
             </div>
         );
     }

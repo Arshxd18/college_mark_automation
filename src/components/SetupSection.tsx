@@ -26,7 +26,7 @@ interface SetupSectionProps {
     onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     uploadStatus: "idle" | "uploading" | "success" | "error";
     uploadError: string;
-    onSaveToFirebase: () => void;
+    onSaveToSupabase: () => void;
     saveStatus: "idle" | "saving" | "success" | "error";
     coDescriptions: Record<COLabel, string>;
     setCoDescriptions: React.Dispatch<React.SetStateAction<Record<COLabel, string>>>;
@@ -45,7 +45,7 @@ export default function SetupSection({
     onFileUpload,
     uploadStatus,
     uploadError,
-    onSaveToFirebase,
+    onSaveToSupabase,
     saveStatus,
     coDescriptions,
     setCoDescriptions,
@@ -300,7 +300,7 @@ export default function SetupSection({
 
                         <div className="flex items-center gap-3 w-full sm:w-auto">
                             <button
-                                onClick={onSaveToFirebase}
+                                onClick={onSaveToSupabase}
                                 disabled={saveStatus === "saving"}
                                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto 
                                     ${saveStatus === "saving" ? "bg-violet-400 text-white cursor-not-allowed" :
@@ -314,7 +314,7 @@ export default function SetupSection({
                                             <CloudUpload className="w-4 h-4" />}
                                 {saveStatus === "saving" ? "Saving..." :
                                     saveStatus === "success" ? "Saved!" :
-                                        "Save Data to Firebase"}
+                                        "Save Data to Supabase"}
                             </button>
 
                             <button

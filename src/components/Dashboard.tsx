@@ -125,7 +125,7 @@ export default function Dashboard() {
         }
     };
 
-    const handleSaveToFirebase = async () => {
+    const handleSaveToSupabase = async () => {
         if (!examConfig.batchYear.trim()) {
             alert("Please set a Batch Year before saving.");
             return;
@@ -215,7 +215,7 @@ export default function Dashboard() {
         if (saveStatus === "saving") return <><Loader2 className="w-4 h-4 animate-spin" />Saving...</>;
         if (saveStatus === "success") return <><CheckCircle className="w-4 h-4" />Saved!</>;
         if (saveStatus === "error") return <><AlertCircle className="w-4 h-4" />Error</>;
-        return <><CloudUpload className="w-4 h-4" />Save to Firebase</>;
+        return <><CloudUpload className="w-4 h-4" />Save to Supabase</>;
     };
 
     const saveButtonClass = {
@@ -263,9 +263,9 @@ export default function Dashboard() {
 
                         <div className="h-6 w-px bg-gray-300"></div>
 
-                        {/* Save to Firebase */}
+                        {/* Save to Supabase */}
                         <button
-                            onClick={handleSaveToFirebase}
+                            onClick={handleSaveToSupabase}
                             disabled={saveStatus === "saving"}
                             className={`flex items-center gap-2 ${saveButtonClass} text-white px-4 py-2 rounded-lg shadow-sm text-sm font-semibold transition-all hover:-translate-y-0.5`}
                         >
@@ -284,7 +284,7 @@ export default function Dashboard() {
 
                     {/* Mobile */}
                     <div className="md:hidden flex items-center gap-2">
-                        <button onClick={handleSaveToFirebase} disabled={saveStatus === "saving"}
+                        <button onClick={handleSaveToSupabase} disabled={saveStatus === "saving"}
                             className={`p-2 ${saveButtonClass} text-white rounded-lg`}>
                             <CloudUpload className="w-5 h-5" />
                         </button>
@@ -328,7 +328,7 @@ export default function Dashboard() {
                     onFileUpload={handleFileUpload}
                     uploadStatus={uploadStatus}
                     uploadError={uploadError}
-                    onSaveToFirebase={handleSaveToFirebase}
+                    onSaveToSupabase={handleSaveToSupabase}
                     saveStatus={saveStatus}
                     coDescriptions={coDescriptions}
                     setCoDescriptions={setCoDescriptions}

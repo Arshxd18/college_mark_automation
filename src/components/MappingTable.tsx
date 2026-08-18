@@ -477,7 +477,7 @@ export default function MappingTable({ batchYear, subjectId, initialDoc }: Mappi
                                 )}
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                                {saving ? "Saving..." : saved ? "Saved!" : "Save to Firebase"}
+                                {saving ? "Saving..." : saved ? "Saved!" : "Save to Supabase"}
                             </button>
                             <button
                                 onClick={handleExport}
