@@ -28,7 +28,9 @@ export const parseExcelUpload = async (file: File, testType: string = "Internal 
                     testType = "CO Average";
                 }
 
-                if (testType === "Unit Test") {
+                const isUTStyle = json[0] && json[0].some(cell => cell && cell.toString().includes("Unit Test"));
+
+                if (isUTStyle || testType === "Unit Test") {
                     result = parseUnitTest(json, testType);
                 } else if (testType === "Assignment") {
                     result = parseAssignment(json, testType);
