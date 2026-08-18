@@ -29,8 +29,12 @@ export const parseExcelUpload = async (file: File, testType: string = "Internal 
                 }
 
                 const isUTStyle = json[0] && json[0].some(cell => cell && cell.toString().includes("Unit Test"));
+                const isNewInternalStyle = json[0] && json[0].some(cell => cell && (cell.toString().includes("INTERNAL 1") || cell.toString().includes("INTERNAL 2"))) &&
+                                           json[1] && json[1].some(cell => cell && cell.toString().includes("CO 1"));
 
-                if (isUTStyle || testType === "Unit Test") {
+                if (isNewInternalStyle) {
+                    result = parseNewInternal(json, testType);
+                } else if (isUTStyle || testType === "Unit Test") {
                     result = parseUnitTest(json, testType);
                 } else if (testType === "Assignment") {
                     result = parseAssignment(json, testType);
@@ -435,6 +439,115 @@ function parseCoAverage(json: any[][], testType: string): ParsedUploadData {
         if (Object.keys(student.marks).length > 0) {
             students.push(student);
         }
+    }
+
+    return { academicYear: "2023-2024", testType, questionConfig: qConfig, students, headers: ["REG.NO", "NAME"] };
+}
+
+function parseNewInternal(json: any[][], testType: string): ParsedUploadData {
+    const qConfig: QuestionConfig = {};
+    const students: any[] = [];
+    const coRow = json[1] || [];
+
+    // Columns 3 to 8 contain CO1 to CO6
+    const activeCols: number[] = [];
+    const colMaxs: Record<number, number> = {};
+
+    // Find where student rows end
+    let lastStudentRow = 2;
+    while (lastStudentRow < json.length) {
+        const r = json[lastStudentRow];
+        if (!r || !r[2] || r[2].toString().trim() === "") {
+            break;
+        }
+        lastStudentRow++;
+    }
+
+    // Scan student rows to check which columns have values
+    for (let c = 3; c <= 8; c++) {
+        let maxObtained = 0;
+        let hasMark = false;
+        for (let r = 2; r < lastStudentRow; r++) {
+            const val = json[r]?.[c];
+            if (val !== undefined && val !== null && val !== "") {
+                const num = Number(val);
+                if (!isNaN(num)) {
+                    hasMark = true;
+                    if (num > maxObtained) maxObtained = num;
+                }
+            }
+        }
+        if (hasMark) {
+            activeCols.push(c);
+            colMaxs[c] = maxObtained;
+        }
+    }
+
+    // If template is completely blank, assume all columns are active with default 100 max mark
+    if (activeCols.length === 0) {
+        for (let c = 3; c <= 8; c++) {
+            activeCols.push(c);
+            colMaxs[c] = 100;
+        }
+    }
+
+    const prefix = testType.toLowerCase().replace(/\s+/g, "") === "internal1" ? "ia1" : "ia2";
+
+    const getInternalMaxMark = (rawMax: number): number => {
+        if (rawMax <= 20) return 20;
+        if (rawMax <= 50) return 50;
+        return 100;
+    };
+
+    activeCols.forEach((c) => {
+        const coLabel = coRow[c];
+        if (coLabel) {
+            const normalizedCo = coLabel.toString().toLowerCase().replace(/[^a-z0-9]/g, '') as COLabel;
+            if (normalizedCo.startsWith('co')) {
+                const key = `${prefix}_${normalizedCo}`;
+                const maxMark = getInternalMaxMark(colMaxs[c] || 100);
+
+                qConfig[key] = {
+                    maxMark: maxMark,
+                    co: normalizedCo
+                };
+            }
+        }
+    });
+
+    // Extract Students and Marks
+    for (let r = 2; r < lastStudentRow; r++) {
+        const row = json[r];
+        if (!row || !Array.isArray(row)) continue;
+
+        const regNo = row[1];
+        const name = row[2];
+        if (!regNo || !name) continue;
+
+        const student: any = {
+            slNo: students.length + 1,
+            regNo: String(regNo).trim(),
+            name: String(name).trim(),
+            marks: {}
+        };
+
+        activeCols.forEach((c) => {
+            const coLabel = coRow[c];
+            if (coLabel) {
+                const normalizedCo = coLabel.toString().toLowerCase().replace(/[^a-z0-9]/g, '') as COLabel;
+                if (normalizedCo.startsWith('co')) {
+                    const key = `${prefix}_${normalizedCo}`;
+                    const mark = row[c];
+                    if (mark !== undefined && mark !== null && mark !== "") {
+                        const num = Number(mark);
+                        if (!isNaN(num)) {
+                            student.marks[key] = num;
+                        }
+                    }
+                }
+            }
+        });
+        students.push(student);
     }
 
     return { academicYear: "2023-2024", testType, questionConfig: qConfig, students, headers: ["REG.NO", "NAME"] };
