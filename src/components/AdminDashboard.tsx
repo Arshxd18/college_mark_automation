@@ -31,13 +31,18 @@ const LEVEL_STYLE: Record<string, string> = {
     "0": "bg-red-100 text-red-700 border border-red-200",
 };
 
-function LevelBadge({ level }: { level: number | "N/A" | null | undefined }) {
-    if (level === null || level === undefined || level === "N/A") {
-        return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-400">N/A</span>;
+function LevelBadge({ stats }: { stats?: { level: number | "N/A" | null; pct: number | null; scoring60: number; attended: number } | null }) {
+    if (!stats || stats.level === null || stats.level === undefined || stats.level === "N/A") {
+        const tip = stats ? `No questions mapped to this CO` : `No data`;
+        return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-400" title={tip}>N/A</span>;
     }
-    const r = Math.min(Math.max(Math.round(level as number), 0), 3);
+    const r = Math.min(Math.max(Math.round(stats.level as number), 0), 3);
+    const tip = `${stats.scoring60}/${stats.attended} students ≥60% → ${stats.pct?.toFixed(1) ?? 0}%`;
     return (
-        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${LEVEL_STYLE[String(r)]}`}>
+        <span
+            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold cursor-help ${LEVEL_STYLE[String(r)]}`}
+            title={tip}
+        >
             L{r}
         </span>
     );
@@ -259,7 +264,7 @@ export default function AdminDashboard() {
                                                     <td className="px-4 py-3 text-center text-gray-700 font-semibold text-xs">{d.students?.length ?? 0}</td>
                                                     {CO_KEYS.map((co) => (
                                                         <td key={co} className="px-3 py-3 text-center">
-                                                            <LevelBadge level={d.computed?.attainment?.[co]?.level as any} />
+                                                            <LevelBadge stats={d.computed?.attainment?.[co] as any} />
                                                         </td>
                                                     ))}
                                                     <td className="px-4 py-3 text-[10px] text-gray-400 whitespace-nowrap">
@@ -309,7 +314,7 @@ export default function AdminDashboard() {
                                                             <td className="px-4 py-3 text-center font-semibold text-gray-700 text-xs">{d.students?.length ?? 0}</td>
                                                             {CO_KEYS.map((co) => (
                                                                 <td key={co} className="px-3 py-3 text-center">
-                                                                    <LevelBadge level={d.computed?.attainment?.[co]?.level as any} />
+                                                                    <LevelBadge stats={d.computed?.attainment?.[co] as any} />
                                                                 </td>
                                                             ))}
                                                         </tr>
