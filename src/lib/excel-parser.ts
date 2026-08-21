@@ -28,11 +28,18 @@ export const parseExcelUpload = async (file: File, testType: string = "Internal 
                     testType = "CO Average";
                 }
 
-                const isUTStyle = json[0] && json[0].some(cell => cell && cell.toString().includes("Unit Test"));
-                const isNewInternalStyle = json[0] && json[0].some(cell => cell && (cell.toString().includes("INTERNAL 1") || cell.toString().includes("INTERNAL 2"))) &&
-                                           json[1] && json[1].some(cell => cell && cell.toString().includes("CO 1"));
+                const isUTStyle = json[0] && json[0].some((cell: any) => cell && cell.toString().includes("Unit Test"));
+                
+                // New Internal 1/2 template: has "QUESTION NUMBER" in row 0, "MAXIMUM MARK" and "COURSE OUTCOME" rows
+                const hasQuestionNumberHeader = json[0] && json[0].some((cell: any) => cell && cell.toString().toUpperCase().includes("QUESTION NUMBER"));
+                const hasMaxMarkRow = json.some((row: any[]) => row && row.some((c: any) => c && c.toString().toUpperCase().includes("MAXIMUM MARK")));
+                const isNewInternalQStyle = hasQuestionNumberHeader && hasMaxMarkRow;
 
-                if (isNewInternalStyle) {
+                // Old simple Internal style: had INTERNAL 1/2 header in row 0 with CO 1 in row 1
+                const isOldInternalStyle = json[0] && json[0].some((cell: any) => cell && (cell.toString().includes("INTERNAL 1") || cell.toString().includes("INTERNAL 2"))) &&
+                                           json[1] && json[1].some((cell: any) => cell && cell.toString().includes("CO 1"));
+
+                if (isOldInternalStyle) {
                     result = parseNewInternal(json, testType);
                 } else if (isUTStyle || testType === "Unit Test") {
                     result = parseUnitTest(json, testType);
@@ -43,6 +50,7 @@ export const parseExcelUpload = async (file: File, testType: string = "Internal 
                 } else if (testType === "CO Average") {
                     result = parseCoAverage(json, testType);
                 } else {
+                    // For Internal 1 & 2 (new question-based format) or fallback
                     result = parseInternal(json, testType);
                 }
 
@@ -272,118 +280,90 @@ function parseSemester(json: any[][], testType: string): ParsedUploadData {
 }
 
 function parseInternal(json: any[][], testType: string): ParsedUploadData {
-    let headerRowIndex = -1;
-    let maxMarkRowIndex = -1;
-    let coRowIndex = -1;
-    let studentStartIndex = -1;
+    const qConfig: QuestionConfig = {};
+    const students: any[] = [];
 
-    for (let i = 0; i < json.length; i++) {
-        const row = json[i];
-        if (!row || !Array.isArray(row) || row.length === 0) continue;
-
-        const rowStr = row.map(c => c ? c.toString().toUpperCase() : "").join(" ");
-
-        if (rowStr.includes("REG") && (rowStr.includes("NAME") || rowStr.includes("STUDENT"))) {
-            headerRowIndex = i;
-        }
-
-        if (rowStr.includes("MAXIMUM") || rowStr.includes("MAX MARK")) {
-            maxMarkRowIndex = i;
-        } else if (maxMarkRowIndex === -1 && i !== headerRowIndex) {
-            const validCells = row.filter(c => c !== null && c !== undefined && c !== "").length;
-            const numCount = row.filter(c => typeof c === 'number' || (typeof c === 'string' && !isNaN(Number(c)) && c.trim() !== "")).length;
-            if (validCells > 5 && (numCount / validCells) > 0.8) {
-                if (!row.some(c => typeof c === 'number' && c > 1000)) {
-                    maxMarkRowIndex = i;
-                }
-            }
-        }
-
-        if (rowStr.includes("COURSE OUTCOME") || rowStr.includes("CO MAPPING")) {
-            coRowIndex = i;
-        } else if (coRowIndex === -1 && i !== headerRowIndex && i !== maxMarkRowIndex) {
-            const coCount = row.filter(c => c && c.toString().toUpperCase().match(/CO\s*\d+/)).length;
-            if (coCount > 3) {
-                coRowIndex = i;
-            }
-        }
+    // Find critical rows
+    const headerRowIndex = json.findIndex(row => row && row.some(c => c && c.toString().toUpperCase().replace(/\s+/g, "").includes("REGNO")));
+    const maxMarkRowIndex = json.findIndex(row => row && row.some(c => c && c.toString().toUpperCase().includes("MAXIMUM MARK")));
+    
+    if (headerRowIndex === -1 || maxMarkRowIndex === -1) {
+        throw new Error("Could not find configuration rows in Internal template.");
     }
 
-    if (headerRowIndex === -1) throw new Error("Could not find Header row.");
-    if (maxMarkRowIndex === -1 || coRowIndex === -1) throw new Error(`Could not identify configuration rows.`);
-
-    const rawHeaders = json[headerRowIndex] || [];
-    let subHeaders: any[] = [];
-    if (maxMarkRowIndex > headerRowIndex + 1) {
-        const potentialSub = json[maxMarkRowIndex - 1];
-        if (potentialSub && Array.isArray(potentialSub)) {
-            if (potentialSub.some(c => c && c.toString().match(/\d+[.\s]*[ab]/i))) subHeaders = potentialSub;
-        }
-    }
+    const qNoRowIndex = headerRowIndex + 1;
+    const subQRowIndex = headerRowIndex + 3;
+    const coRowIndex = maxMarkRowIndex + 1;
 
     const maxMarksRow = json[maxMarkRowIndex] || [];
     const coRow = json[coRowIndex] || [];
 
+    const activeCols: number[] = [];
     const questionIndices: { [key: string]: number } = {};
-    const qConfig: QuestionConfig = {};
 
-    const colCount = Math.max(rawHeaders.length, subHeaders.length, maxMarksRow.length);
-
-    for (let idx = 0; idx < colCount; idx++) {
+    for (let c = 4; c < maxMarksRow.length; c++) {
         let qId = "";
-        if (subHeaders[idx]) {
-            const match = subHeaders[idx].toString().match(/(\d+)[.\s]*([ab])/i);
+        const subVal = json[subQRowIndex]?.[c];
+        if (subVal) {
+            const match = subVal.toString().match(/(\d+)[.\s]*([ab])/i);
             if (match) qId = `q${match[1]}${match[2]}`.toLowerCase();
         }
-        if (!qId && rawHeaders[idx]) {
-            const match = rawHeaders[idx].toString().match(/Q[.\s]*N?o?[.\s]*(\d+)/i) || rawHeaders[idx].toString().match(/^Q\s*(\d+)$/i);
-            if (match) qId = `q${match[1]}`.toLowerCase();
+        if (!qId) {
+            const qNoVal = json[qNoRowIndex]?.[c];
+            if (qNoVal) {
+                const match = qNoVal.toString().match(/Q[.\s]*N?o?[.\s]*(\d+)/i) || qNoVal.toString().match(/^Q\s*(\d+)$/i);
+                if (match) qId = `q${match[1]}`.toLowerCase();
+            }
         }
 
-        if (qId && !questionIndices[qId]) {
-            questionIndices[qId] = idx;
-            const max = maxMarksRow[idx];
-            const co = coRow[idx];
+        if (qId && maxMarksRow[c] !== null && maxMarksRow[c] !== undefined) {
+            activeCols.push(c);
+            questionIndices[qId] = c;
 
-            if (max && co) {
-                const normalizedCo = co.toString().toLowerCase().replace(/[^a-z0-9]/g, '') as COLabel;
-                if (normalizedCo.startsWith('co')) {
-                    qConfig[qId] = { maxMark: Number(max), co: normalizedCo };
+            const coVal = coRow[c];
+            let normalizedCo: COLabel = "co1";
+            if (coVal) {
+                const norm = coVal.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (norm.startsWith('co') && ["co1", "co2", "co3", "co4", "co5", "co6"].includes(norm)) {
+                    normalizedCo = norm as COLabel;
                 }
             }
+            qConfig[qId] = {
+                maxMark: Number(maxMarksRow[c]),
+                co: normalizedCo
+            };
         }
     }
 
-    const headers = rawHeaders.map(h => h ? h.toString().trim().toUpperCase() : "");
-    const students = [];
-    const startIndex = Math.max(headerRowIndex, maxMarkRowIndex, coRowIndex) + 1;
+    const studentStartIndex = maxMarkRowIndex + 4;
+    for (let r = studentStartIndex; r < json.length; r++) {
+        const row = json[r];
+        if (!row || !Array.isArray(row)) continue;
 
-    for (let i = startIndex; i < json.length; i++) {
-        const row = json[i];
-        if (!row || !Array.isArray(row) || row.length < 2) continue;
-
-        const regNoIdx = headers.findIndex(h => h && h.toUpperCase().includes("REG"));
-        const nameIdx = headers.findIndex(h => h && h.toUpperCase().includes("NAME"));
-
-        if (regNoIdx === -1 || nameIdx === -1) continue;
+        const regNo = row[1];
+        const name = row[3];
+        if (!regNo || regNo.toString().toUpperCase().includes("REG") || !name || name.toString().toUpperCase().includes("NAME")) continue;
 
         const student: any = {
             slNo: students.length + 1,
-            regNo: row[regNoIdx],
-            name: row[nameIdx],
+            regNo: String(regNo).trim(),
+            name: String(name).trim(),
             marks: {}
         };
 
-        Object.entries(questionIndices).forEach(([qId, idx]) => {
-            const mark = row[idx];
-            if (mark !== undefined && mark !== null && mark !== "") {
-                student.marks[qId] = Number(mark);
+        activeCols.forEach((c) => {
+            const val = row[c];
+            if (val !== null && val !== undefined && val !== "") {
+                const qId = Object.keys(questionIndices).find(k => questionIndices[k] === c);
+                if (qId) {
+                    student.marks[qId] = Number(val);
+                }
             }
         });
         students.push(student);
     }
 
-    return { academicYear: "2023-2024", testType, questionConfig: qConfig, students, headers };
+    return { academicYear: "2023-2024", testType, questionConfig: qConfig, students, headers: ["REG.NO", "NAME"] };
 }
 
 function parseCoAverage(json: any[][], testType: string): ParsedUploadData {
