@@ -139,6 +139,20 @@ export default function Dashboard() {
             return;
         }
 
+        // Check if CO mapping has been configured — warn if ALL questions are still defaulting to co1
+        const configEntries = Object.values(questionConfig);
+        const hasMultipleCOs = new Set(configEntries.map(q => q.co)).size > 1;
+        const allDefaultCO1 = configEntries.length > 0 && configEntries.every(q => q.co === "co1");
+        if (allDefaultCO1 && configEntries.length > 3) {
+            const proceed = window.confirm(
+                "⚠️ Warning: All questions are mapped to CO1 only.\n\n" +
+                "This usually means the CO mapping (Course Outcome row) was blank in the uploaded template.\n\n" +
+                "Please configure the CO mapping for each question in the Setup panel BEFORE saving, otherwise the Admin page will show incorrect L0 levels for CO2–CO6.\n\n" +
+                "Press OK to save anyway, or Cancel to go back and configure COs."
+            );
+            if (!proceed) return;
+        }
+
         setSaveStatus("saving");
         setSaveError("");
         try {
