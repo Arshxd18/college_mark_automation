@@ -29,8 +29,11 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
     const CO_LABELS = ["co1", "co2", "co3", "co4", "co5", "co6"] as const;
 
     const coMaxMarks = useMemo(() => {
+        const hasChoicePairs = Object.keys(questionConfig).some(k => /^q\d+[ab]$/i.test(k));
         const isUT = testType === "Unit Test" || Object.keys(questionConfig).some(k => k.startsWith('u'));
-        if (isUT && students.length > 0) {
+
+        if ((isUT || hasChoicePairs) && students.length > 0) {
+            // Per-student average: accounts for internal choice (which side was answered)
             const totals = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
             students.forEach(student => {
                 const studentMax = calculateCOMaxMarks(questionConfig, student.marks);
@@ -43,9 +46,9 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
             });
             return totals;
         } else {
+            // No internal choice pairs — static max is accurate
             const staticMaxMarks = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
             Object.entries(questionConfig).forEach(([qId, conf]) => {
-                if (qId.endsWith('b')) return;
                 staticMaxMarks[conf.co] += conf.maxMark;
             });
             return staticMaxMarks;

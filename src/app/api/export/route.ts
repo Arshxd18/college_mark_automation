@@ -45,7 +45,9 @@ export async function POST(request: Request) {
         // Total CO Maximum
         let coMax: Record<string, number> = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
         const isUT = testType === "Unit Test" || Object.keys(questionConfig).some(k => k.startsWith('u'));
-        if (isUT && students.length > 0) {
+        const hasChoicePairs = Object.keys(questionConfig).some(k => /^q\d+[ab]$/i.test(k));
+        if ((isUT || hasChoicePairs) && students.length > 0) {
+            // Per-student average: correctly handles internal choice (which side was answered)
             const totals = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
             students.forEach((s: Student) => {
                 const studentMax = calculateCOMaxMarks(questionConfig, s.marks);
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
                 coMax[co] = parseFloat((totals[co] / students.length).toFixed(2));
             });
         } else {
+            // No choice pairs — static max is accurate (no double-counting)
             coMax = calculateCOMaxMarks(questionConfig) as any;
         }
 
