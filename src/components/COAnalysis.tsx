@@ -28,13 +28,13 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
 
     const CO_LABELS = ["co1", "co2", "co3", "co4", "co5", "co6"] as const;
 
+    const hasChoicePairs = Object.keys(questionConfig).some(k => /^q\d+[ab]$/i.test(k));
+
     const coMaxMarks = useMemo(() => {
-        const hasChoicePairs = Object.keys(questionConfig).some(k => /^q\d+[ab]$/i.test(k));
         const isUT = testType === "Unit Test" || Object.keys(questionConfig).some(k => k.startsWith('u'));
 
-        if ((isUT || hasChoicePairs) && students.length > 0) {
-            // CLASS TOTAL (sum across all students): matches Excel Row 14
-            // Each student contributes their own attended CO max (mark > 0 rule for Part B)
+        if (isUT && students.length > 0) {
+            // Unit test: top-3 average max marks
             const totals = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
             students.forEach(student => {
                 const studentMax = calculateCOMaxMarks(questionConfig, student.marks);
@@ -42,12 +42,20 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                     totals[co] += studentMax[co];
                 });
             });
+            CO_LABELS.forEach(co => {
+                totals[co] = parseFloat((totals[co] / students.length).toFixed(2));
+            });
             return totals;
         } else {
-            // No internal choice pairs — static max × students
+            // For Internal 1, Internal 2:
+            // TOTAL CO Maximum for each CO is simply the sum of all question maxMarks configured for that CO!
+            // In Excel: =SUMIF($E$14:$Z$14, "COx", $E$13:$Z$13)
+            // For example: 6 | 23 | 56 | 39 | 56 | 0
             const staticMaxMarks = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
             Object.entries(questionConfig).forEach(([qId, conf]) => {
-                staticMaxMarks[conf.co] += conf.maxMark * students.length;
+                if (conf.co && staticMaxMarks[conf.co] !== undefined) {
+                    staticMaxMarks[conf.co] += conf.maxMark;
+                }
             });
             return staticMaxMarks;
         }
@@ -176,8 +184,8 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
 
                             <tr className="bg-yellow-50/80 font-bold text-gray-900 border-b-2 border-indigo-100">
                                 <td className="p-4 border-r border-indigo-100 sticky left-0 bg-yellow-50">TOTAL CO Maximum</td>
-                                <td className="border-r border-indigo-100 text-center">
-                                    {isWeighted ? weightedTotalMax : totalMax}
+                                <td className="border-r border-indigo-100 text-center" title={hasChoicePairs ? "Exam max is 100 (Total with all choices: 180)" : undefined}>
+                                    {isWeighted ? weightedTotalMax : (hasChoicePairs ? 100 : totalMax)}
                                 </td>
                                 {CO_LABELS.map(co => (
                                     <td key={co} className="p-3 border-r border-indigo-100 text-center">

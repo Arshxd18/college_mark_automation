@@ -17,7 +17,39 @@ export const parseExcelUpload = async (file: File, testType: string = "Internal 
             try {
                 const data = e.target?.result;
                 const workbook = XLSX.read(data, { type: 'binary' });
-                const sheetName = workbook.SheetNames[0];
+
+                // Find matching sheet if multi-sheet workbook (e.g. NEWEXCEL.xlsx)
+                let sheetName = workbook.SheetNames[0];
+                const normalizedTestType = testType.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+                for (const sName of workbook.SheetNames) {
+                    const norm = sName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (normalizedTestType.includes('internal1') && (norm.includes('internal1') || norm.includes('internali') || norm.includes('int1') || norm.includes('inti'))) {
+                        sheetName = sName;
+                        break;
+                    }
+                    if (normalizedTestType.includes('internal2') && (norm.includes('internal2') || norm.includes('internalii') || norm.includes('int2') || norm.includes('intii'))) {
+                        sheetName = sName;
+                        break;
+                    }
+                    if (normalizedTestType.includes('unittest') && (norm.includes('unittest') || norm.includes('ut'))) {
+                        sheetName = sName;
+                        break;
+                    }
+                    if (normalizedTestType.includes('assignment') && norm.includes('assign')) {
+                        sheetName = sName;
+                        break;
+                    }
+                    if (normalizedTestType.includes('semester') && (norm.includes('semester') || norm.includes('university') || norm.includes('see'))) {
+                        sheetName = sName;
+                        break;
+                    }
+                    if (normalizedTestType.includes('coaverage') && (norm.includes('coaverage') || norm.includes('coavg') || norm.includes('cosattainment'))) {
+                        sheetName = sName;
+                        break;
+                    }
+                }
+
                 const sheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
 
@@ -335,19 +367,42 @@ function parseInternal(json: any[][], testType: string): ParsedUploadData {
         }
     }
 
-    const studentStartIndex = maxMarkRowIndex + 4;
+    // Detect Reg No, Roll No, and Name columns from header row and student name row
+    const headerRow = json[headerRowIndex] || [];
+    let regCol = 2, rollCol = 1, nameCol = 3;
+    headerRow.forEach((c, idx) => {
+        if (!c) return;
+        const str = c.toString().toUpperCase().replace(/[^A-Z]/g, '');
+        if (str.includes('REG')) regCol = idx;
+        else if (str.includes('ROLL')) rollCol = idx;
+        else if (str.includes('NAME')) nameCol = idx;
+    });
+
+    const nameRowIndex = json.findIndex(row => row && row.some(c => c && c.toString().toUpperCase().includes('STUDENT NAME')));
+    if (nameRowIndex !== -1) {
+        json[nameRowIndex].forEach((c, idx) => {
+            if (c && c.toString().toUpperCase().includes('STUDENT NAME')) nameCol = idx;
+        });
+    }
+
+    const studentStartIndex = maxMarkRowIndex + 3;
     for (let r = studentStartIndex; r < json.length; r++) {
         const row = json[r];
         if (!row || !Array.isArray(row)) continue;
 
-        const regNo = row[1];
-        const name = row[3];
-        if (!regNo || regNo.toString().toUpperCase().includes("REG") || !name || name.toString().toUpperCase().includes("NAME")) continue;
+        // Skip rows that look like headers or summaries
+        if (row.some(c => c && typeof c === 'string' && (c.toUpperCase().includes('STUDENT NAME') || c.toUpperCase().includes('ATTAINMENT') || c.toUpperCase().includes('PERCENTAGE')))) continue;
+
+        const regVal = row[regCol] !== undefined && row[regCol] !== null && String(row[regCol]).trim() !== "" ? row[regCol] : (row[rollCol] || row[1]);
+        const nameVal = row[nameCol] !== undefined && row[nameCol] !== null && String(row[nameCol]).trim() !== "" ? row[nameCol] : (row[3] || row[2]);
+
+        if (!regVal && !nameVal) continue;
+        if (String(regVal).toUpperCase().includes("REG") || String(nameVal).toUpperCase().includes("NAME")) continue;
 
         const student: any = {
             slNo: students.length + 1,
-            regNo: String(regNo).trim(),
-            name: String(name).trim(),
+            regNo: String(regVal).trim(),
+            name: String(nameVal || ("Student " + (students.length + 1))).trim(),
             marks: {}
         };
 

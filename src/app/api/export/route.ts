@@ -46,8 +46,9 @@ export async function POST(request: Request) {
         let coMax: Record<string, number> = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
         const isUT = testType === "Unit Test" || Object.keys(questionConfig).some(k => k.startsWith('u'));
         const hasChoicePairs = Object.keys(questionConfig).some(k => /^q\d+[ab]$/i.test(k));
-        if ((isUT || hasChoicePairs) && students.length > 0) {
-            // Per-student average: correctly handles internal choice (which side was answered)
+
+        if (isUT && students.length > 0) {
+            // Unit test: top-3 average max marks
             const totals = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
             students.forEach((s: Student) => {
                 const studentMax = calculateCOMaxMarks(questionConfig, s.marks);
@@ -59,13 +60,17 @@ export async function POST(request: Request) {
                 coMax[co] = parseFloat((totals[co] / students.length).toFixed(2));
             });
         } else {
-            // No choice pairs — static max is accurate (no double-counting)
-            coMax = calculateCOMaxMarks(questionConfig) as any;
+            // Internal 1, 2, etc.: sum of all question maxMarks for each CO
+            Object.entries(questionConfig).forEach(([qId, conf]: [string, any]) => {
+                if (conf.co && coMax[conf.co] !== undefined) {
+                    coMax[conf.co] += conf.maxMark;
+                }
+            });
         }
 
         const totalMaxRow = [
             "TOTAL CO Maximum",
-            Object.values(coMax).reduce((a: number, b: number) => a + b, 0),
+            hasChoicePairs ? 100 : Object.values(coMax).reduce((a: number, b: number) => a + b, 0),
             ...coLabels.map(co => coMax[co]),
             ...Array(7).fill("")
         ];
