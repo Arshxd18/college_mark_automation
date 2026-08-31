@@ -33,7 +33,8 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
         const isUT = testType === "Unit Test" || Object.keys(questionConfig).some(k => k.startsWith('u'));
 
         if ((isUT || hasChoicePairs) && students.length > 0) {
-            // Per-student average: accounts for internal choice (which side was answered)
+            // CLASS TOTAL (sum across all students): matches Excel Row 14
+            // Each student contributes their own attended CO max (mark > 0 rule for Part B)
             const totals = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
             students.forEach(student => {
                 const studentMax = calculateCOMaxMarks(questionConfig, student.marks);
@@ -41,15 +42,12 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                     totals[co] += studentMax[co];
                 });
             });
-            CO_LABELS.forEach(co => {
-                totals[co] = parseFloat((totals[co] / students.length).toFixed(2));
-            });
             return totals;
         } else {
-            // No internal choice pairs — static max is accurate
+            // No internal choice pairs — static max × students
             const staticMaxMarks = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
             Object.entries(questionConfig).forEach(([qId, conf]) => {
-                staticMaxMarks[conf.co] += conf.maxMark;
+                staticMaxMarks[conf.co] += conf.maxMark * students.length;
             });
             return staticMaxMarks;
         }

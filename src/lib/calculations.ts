@@ -80,32 +80,19 @@ export const calculateCOAttainment = (marks: Marks, config: QuestionConfig): COR
 
     let totalMarks = 0;
 
-    // Calculate CO totals
-    Object.keys(currentMarks).forEach((qId) => {
-        let mark = currentMarks[qId] || 0;
+    // ── Excel Formula (matching NEWEXCEL.xlsx exactly) ──────────────────────
+    // NUMERATOR: For each question, add student's mark to its CO total.
+    //   - Part A: always included (regardless of score).
+    //   - Part B (q<n>a / q<n>b): add mark only if mark > 0.
+    //     Both sides of a choice pair can contribute independently
+    //     (student may have partial credit on both sides).
+    // ─────────────────────────────────────────────────────────────────────────
+    Object.keys(currentConfig).forEach((qId) => {
+        const mark = currentMarks[qId] || 0;
+        const isPartB = /^q\d+[ab]$/i.test(qId);
 
-        // --- Internal Choice Logic (Part B: 11-15) ---
-        // If this is an 'a' or 'b' question, check if its pair exists and if we should count this one.
-        const match = qId.match(/^q(\d+)([ab])$/i);
-        if (match) {
-            const num = match[1];
-            const part = match[2].toLowerCase();
-            const pairPart = part === 'a' ? 'b' : 'a';
-            const pairId = `q${num}${pairPart}`;
-
-            const pairMark = currentMarks[pairId] || 0;
-
-            // Rule: Take MAX of the pair.
-            // If both present, only add the higher one to the total/CO. 
-            // To avoid double counting, we only process if:
-            // 1. This mark > pairMark
-            // 2. OR (This mark == pairMark AND this is 'a') -> deterministic tie-breaking
-
-            // If this mark is strictly lower, ignore it for calculation.
-            if (mark < pairMark) return;
-            // If equal, only count 'a' to avoid double counting
-            if (mark === pairMark && part === 'b') return;
-        }
+        // For Part B: only count if student actually scored > 0
+        if (isPartB && mark <= 0) return;
 
         const qConfig = currentConfig[qId];
         if (qConfig) {
@@ -119,8 +106,8 @@ export const calculateCOAttainment = (marks: Marks, config: QuestionConfig): COR
 
     result.total = totalMarks;
 
-    // Calculate percentages
-    const coMaxMarks = calculateCOMaxMarks(currentConfig, currentMarks); // Pass marks to determine which max to count
+    // Calculate percentages using the same mark>0 rule for the denominator
+    const coMaxMarks = calculateCOMaxMarks(currentConfig, currentMarks);
 
     (["co1", "co2", "co3", "co4", "co5", "co6"] as const).forEach((co) => {
         const max = coMaxMarks[co];
@@ -144,45 +131,25 @@ export const calculateCOMaxMarks = (config: QuestionConfig, marks?: Marks) => {
         currentConfig = filtered.filteredConfig;
     }
 
+    // ── Excel Formula denominator (matching NEWEXCEL.xlsx exactly) ───────────
+    // Part A (q1..q10): ALWAYS include max mark (SUMIF on Part A columns)
+    // Part B (q<n>a/q<n>b): Include max mark ONLY if student's mark > 0
+    //   (SUMPRODUCT with mark > 0 condition on Part B columns)
+    // If no marks provided (static view): include everything (both sides)
+    // ────────────────────────────────────────────────────────────────────────
     Object.keys(currentConfig).forEach((qId) => {
         const { co, maxMark } = currentConfig[qId];
+        if (!co) return;
 
-        // Logic for Max Marks:
-        // We need to know WHICH question was attempted to add its max mark to the denominator.
-        // If marks are provided, we follow the same "Max Mark attained" logic.
-        // If no marks provided (e.g. initial view), we might default to 'a' or validation needed?
-        // Standard practice for CO attainment: Denominator attempts usually follow what student attempted?
-        // OR is it fixed? Usually for "Internal Choice", the max mark of the *attempted* question counts.
+        const isPartB = /^q\d+[ab]$/i.test(qId);
 
-        if (marks) {
-            const match = qId.match(/^q(\d+)([ab])$/i);
-            if (match) {
-                const num = match[1];
-                const part = match[2].toLowerCase();
-                const pairPart = part === 'a' ? 'b' : 'a';
-                const pairId = `q${num}${pairPart}`;
-
-                const myMark = marks[qId] || 0;
-                const pairMark = marks[pairId] || 0;
-
-                // Sync with attainment logic: Only count Max Mark if this question was the "chosen" one.
-                if (myMark < pairMark) return;
-                if (myMark === pairMark && part === 'b') return;
-            }
-        } else {
-            // If no marks (e.g. theoretical max), we can't decide internal choice without assumption.
-            // Usually we treat 'a' as default or sum all? 
-            // For attainment % calculation, we MUST know what student picked.
-            // If this function is called without marks, it likely needs 'All Possible Max' which is wrong for % logic.
-            // We will assume marks are passed for accurate % calc.
-            // If not, we skip internal choice logic and just add all (which might be duplicate).
-            // Let's implement a "Default to A" or "Max of Config" if marks missing?
-            // Better: If marks missing, just add everything (Static View).
+        if (isPartB && marks) {
+            // Part B with marks: only count if student scored > 0 (Excel: mark > 0)
+            const studentMark = marks[qId] || 0;
+            if (studentMark <= 0) return;
         }
-
-        if (co) {
-            maxMarks[co] += maxMark;
-        }
+        // Part A (always), or Part B without marks (static view): include
+        maxMarks[co] += maxMark;
     });
 
     return maxMarks;
