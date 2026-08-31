@@ -8,6 +8,29 @@ export const UT_DEFINITIONS = [
     { id: 5, label: "UT5", keys: ["u5_co1", "u5_co2", "u5_co3", "u5_co4", "u5_co5", "u5_co6"] },
 ];
 
+/** Natural sort for question keys (e.g. q1, q2, ... q10, q11a, q11b ... q16b, or u1..u5) */
+export const sortQuestionKeys = (keys: string[]): string[] => {
+    return [...keys].sort((a, b) => {
+        const prefixA = a.match(/^[a-zA-Z_]+/)?.[0] || '';
+        const prefixB = b.match(/^[a-zA-Z_]+/)?.[0] || '';
+
+        if (prefixA !== prefixB) {
+            return prefixA.localeCompare(prefixB);
+        }
+
+        const matchA = a.match(/\d+/);
+        const matchB = b.match(/\d+/);
+        const numA = matchA ? parseInt(matchA[0], 10) : 0;
+        const numB = matchB ? parseInt(matchB[0], 10) : 0;
+
+        if (numA !== numB) {
+            return numA - numB;
+        }
+
+        return a.localeCompare(b, undefined, { numeric: true });
+    });
+};
+
 export const getFilteredUTMarksAndConfig = (
     marks: Marks,
     config: QuestionConfig

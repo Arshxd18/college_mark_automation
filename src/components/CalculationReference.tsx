@@ -2,6 +2,7 @@
 
 import React from "react";
 import { QuestionConfig, COLabel } from "@/types";
+import { sortQuestionKeys } from "@/lib/calculations";
 
 
 interface CalculationReferenceProps {
@@ -19,12 +20,7 @@ export default function CalculationReference({ questionConfig }: CalculationRefe
         co6: { questions: [], totalMax: 0 },
     };
 
-    const activeQuestions = Object.keys(questionConfig).sort((a, b) => {
-        const numA = Number(a.match(/\\d+/)?.[0] || 0);
-        const numB = Number(b.match(/\\d+/)?.[0] || 0);
-        if (numA !== numB) return numA - numB;
-        return a.localeCompare(b);
-    });
+    const activeQuestions = sortQuestionKeys(Object.keys(questionConfig));
 
     activeQuestions.forEach((qId) => {
         const config = questionConfig[qId];

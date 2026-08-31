@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ExamConfig, QuestionConfig, COLabel } from "@/types";
+import { sortQuestionKeys } from "@/lib/calculations";
 import { ChevronDown, ChevronUp, Settings, Upload, CloudUpload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
 const CO_OPTIONS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
@@ -225,15 +226,14 @@ export default function SetupSection({
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {Object.keys(questionConfig).sort((a, b) => {
-                                const numA = Number(a.match(/\\d+/)?.[0] || 0);
-                                const numB = Number(b.match(/\\d+/)?.[0] || 0);
-                                if (numA !== numB) return numA - numB;
-                                return a.localeCompare(b);
-                            }).map((qId) => (
-                                <div key={qId} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div className="w-12 text-center font-bold text-gray-700 uppercase">
+                        {(() => {
+                            const sortedKeys = sortQuestionKeys(Object.keys(questionConfig));
+                            const isInternalFormat = sortedKeys.some(k => /^q([1-9]|10)$/i.test(k)) && sortedKeys.some(k => /^q\d+[ab]$/i.test(k));
+                            const isUTFormat = sortedKeys.some(k => k.startsWith('u'));
+
+                            const renderCard = (qId: string) => (
+                                <div key={qId} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100 hover:border-indigo-200 transition-colors">
+                                    <div className="w-12 text-center font-bold text-gray-700 uppercase text-xs">
                                         {qId}
                                     </div>
                                     <div className="flex-1 space-y-2">
@@ -252,7 +252,7 @@ export default function SetupSection({
                                             <select
                                                 value={questionConfig[qId]?.co}
                                                 onChange={(e) => handleQuestionConfigChange(qId, "co", e.target.value)}
-                                                className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500 bg-white"
+                                                className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500 bg-white font-medium"
                                             >
                                                 {CO_OPTIONS.map(co => (
                                                     <option key={co} value={co}>{co.toUpperCase()}</option>
@@ -261,8 +261,70 @@ export default function SetupSection({
                                         </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                            );
+
+                            if (isInternalFormat) {
+                                const partAKeys = sortedKeys.filter(k => /^q([1-9]|10)$/i.test(k));
+                                const partBKeys = sortedKeys.filter(k => !/^q([1-9]|10)$/i.test(k));
+                                return (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100">
+                                                    Part A (Q1 – Q10 &middot; 2 Marks Each)
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                                                {partAKeys.map(renderCard)}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <span className="text-xs font-bold uppercase tracking-wider text-violet-700 bg-violet-50 px-2.5 py-1 rounded-md border border-violet-100">
+                                                    Part B (Q11 – Q16 &middot; Either/Or Choices)
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                                {partBKeys.map(renderCard)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            if (isUTFormat) {
+                                const utGroups: Record<string, string[]> = {};
+                                sortedKeys.forEach(k => {
+                                    const utNum = k.match(/^u(\d+)/)?.[1] || 'Other';
+                                    const label = `Unit Test ${utNum}`;
+                                    if (!utGroups[label]) utGroups[label] = [];
+                                    utGroups[label].push(k);
+                                });
+                                return (
+                                    <div className="space-y-6">
+                                        {Object.entries(utGroups).map(([groupLabel, keys]) => (
+                                            <div key={groupLabel}>
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100">
+                                                        {groupLabel}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+                                                    {keys.map(renderCard)}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            }
+
+                            return (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {sortedKeys.map(renderCard)}
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 pt-6">

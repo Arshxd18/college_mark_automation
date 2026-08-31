@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Student, Marks, QuestionConfig } from "@/types";
+import { sortQuestionKeys } from "@/lib/calculations";
 import { Plus, Trash2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,12 +33,7 @@ export default function MarksEntry({
     };
 
     const activeQuestions = React.useMemo(() => {
-        return Object.keys(questionConfig).sort((a, b) => {
-            const numA = Number(a.match(/\\d+/)?.[0] || 0);
-            const numB = Number(b.match(/\\d+/)?.[0] || 0);
-            if (numA !== numB) return numA - numB;
-            return a.localeCompare(b);
-        });
+        return sortQuestionKeys(Object.keys(questionConfig));
     }, [questionConfig]);
 
     return (
