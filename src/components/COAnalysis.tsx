@@ -17,6 +17,7 @@ interface COAnalysisProps {
 const WEIGHT_BY_TYPE: Record<string, number> = {
     "CO Average": 0.25,
     "Unit Test": 0.15,
+    "Assignment": 0.25,
     "Internal 1": 1,
     "Internal 2": 1,
     "Semester": 0.60,
@@ -258,8 +259,8 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                                 </tr>
                             ))}
 
-                            {/* Attainment Summary Rows — CO Average and Unit Test */}
-                            {(testType === "CO Average" || testType === "Unit Test") && (<>
+                            {/* Attainment Summary Rows — CO Average, Unit Test, Assignment */}
+                            {(testType === "CO Average" || testType === "Unit Test" || testType === "Assignment") && (<>
                             <tr>
                                 <td colSpan={2} className="p-3 border-r border-indigo-50 font-semibold bg-gray-50/50 sticky left-0 text-gray-700">No of Students Attended</td>
                                 {CO_LABELS.map(co => (
