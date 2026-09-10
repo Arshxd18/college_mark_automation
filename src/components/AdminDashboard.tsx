@@ -113,9 +113,12 @@ export default function AdminDashboard() {
         setLoadingOptions(true);
         Promise.all([getAllAcademicYears(), getAllBatchYears(), getAllFacultyNames()])
             .then(([ay, by, fn]) => {
-                setAcademicYears(ay);
-                setBatchYears(by);
-                setFacultyNames(fn);
+                setAcademicYears(ay || []);
+                setBatchYears(by || []);
+                setFacultyNames(fn || []);
+            })
+            .catch((err) => {
+                console.warn("Failed loading admin filter options:", err);
             })
             .finally(() => setLoadingOptions(false));
     }, []);
@@ -123,13 +126,17 @@ export default function AdminDashboard() {
     useEffect(() => {
         setSubjectId(""); setSection("");
         if (!batchYear) { setSubjects([]); setSections([]); return; }
-        getSubjectsForBatch(batchYear).then(setSubjects);
+        getSubjectsForBatch(batchYear)
+            .then((s) => setSubjects(s || []))
+            .catch((err) => console.warn("Failed fetching subjects for batch:", err));
     }, [batchYear]);
 
     useEffect(() => {
         setSection("");
         if (!batchYear) { setSections([]); return; }
-        getSectionsForBatch(batchYear, subjectId || undefined).then(setSections);
+        getSectionsForBatch(batchYear, subjectId || undefined)
+            .then((sec) => setSections(sec || []))
+            .catch((err) => console.warn("Failed fetching sections for batch:", err));
     }, [batchYear, subjectId]);
 
     const handleSearch = useCallback(async () => {

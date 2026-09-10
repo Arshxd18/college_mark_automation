@@ -144,40 +144,52 @@ export async function getAssessmentsForBatch(
 }
 
 export async function getAllBatchYears(): Promise<string[]> {
-    const { data, error } = await supabase
-        .from("assessments")
-        .select("batch_year")
-        .eq("is_active", true);
+    try {
+        const { data, error } = await supabase
+            .from("assessments")
+            .select("batch_year")
+            .eq("is_active", true);
 
-    if (error) {
-        throw new Error(`Failed to fetch batch years: ${error.message}`);
+        if (error) {
+            console.warn("Could not fetch batch years from Supabase:", error.message);
+            return [];
+        }
+
+        const years = new Set<string>();
+        (data || []).forEach((row) => {
+            if (row.batch_year) years.add(row.batch_year);
+        });
+
+        return Array.from(years).sort();
+    } catch (err: any) {
+        console.warn("Network error fetching batch years:", err?.message || err);
+        return [];
     }
-
-    const years = new Set<string>();
-    (data || []).forEach((row) => {
-        if (row.batch_year) years.add(row.batch_year);
-    });
-
-    return Array.from(years).sort();
 }
 
 export async function getSubjectsForBatch(batchYear: string): Promise<string[]> {
-    const { data, error } = await supabase
-        .from("assessments")
-        .select("subject_id")
-        .eq("batch_year", batchYear)
-        .eq("is_active", true);
+    try {
+        const { data, error } = await supabase
+            .from("assessments")
+            .select("subject_id")
+            .eq("batch_year", batchYear)
+            .eq("is_active", true);
 
-    if (error) {
-        throw new Error(`Failed to fetch subjects: ${error.message}`);
+        if (error) {
+            console.warn("Could not fetch subjects from Supabase:", error.message);
+            return [];
+        }
+
+        const subjects = new Set<string>();
+        (data || []).forEach((row) => {
+            if (row.subject_id) subjects.add(row.subject_id);
+        });
+
+        return Array.from(subjects).sort();
+    } catch (err: any) {
+        console.warn("Network error fetching subjects:", err?.message || err);
+        return [];
     }
-
-    const subjects = new Set<string>();
-    (data || []).forEach((row) => {
-        if (row.subject_id) subjects.add(row.subject_id);
-    });
-
-    return Array.from(subjects).sort();
 }
 
 // ── Attainment Results ────────────────────────────────────────────────────────
@@ -218,7 +230,7 @@ export async function updateCODescriptions(
     const id = resultDocId(batchYear, subjectId);
     
     // First check if a row exists
-    const { data } = await supabase
+    await supabase
         .from("attainment_results")
         .select("id")
         .eq("id", id)
@@ -241,149 +253,166 @@ export async function getAttainmentResult(
     batchYear: string,
     subjectId: string
 ): Promise<AttainmentResult | null> {
-    const id = resultDocId(batchYear, subjectId);
-    const { data, error } = await supabase
-        .from("attainment_results")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
+    try {
+        const id = resultDocId(batchYear, subjectId);
+        const { data, error } = await supabase
+            .from("attainment_results")
+            .select("*")
+            .eq("id", id)
+            .maybeSingle();
 
-    if (error) {
-        throw new Error(`Failed to fetch attainment result: ${error.message}`);
+        if (error) {
+            console.warn("Could not fetch attainment result:", error.message);
+            return null;
+        }
+
+        return data ? mapResultToFrontend(data) : null;
+    } catch (err: any) {
+        console.warn("Network error fetching attainment result:", err?.message || err);
+        return null;
     }
-
-    return data ? mapResultToFrontend(data) : null;
 }
 
-// ── CO–PO–PSO Mapping ──────────────────────────────────────────
+// ── CO Mapping ────────────────────────────────────────────────────────────────
 
-export async function saveCOMapping(mappingDoc: COMappingDoc): Promise<string> {
-    // 1. Deactivate old mapping docs for this batch+subject
-    const { error: updateError } = await supabase
-        .from("mappings")
-        .update({ is_active: false })
-        .eq("batch_year", mappingDoc.batchYear)
-        .eq("subject_id", mappingDoc.subjectId)
-        .eq("is_active", true);
+const mappingDocId = (batchYear: string, subjectId: string) =>
+    `mapping_${batchYear}_${subjectId}`.replace(/[^a-zA-Z0-9_-]/g, "_");
 
-    if (updateError) {
-        throw new Error(`Failed to deactivate old mappings: ${updateError.message}`);
+export async function saveCOMapping(doc: COMappingDoc): Promise<void> {
+    const id = mappingDocId(doc.batchYear, doc.subjectId);
+    
+    const { error } = await supabase.from("mappings").upsert({
+        id: id,
+        batch_year: doc.batchYear,
+        subject_id: doc.subjectId,
+        co_descriptions: doc.coDescriptions,
+        matrix: doc.matrix,
+        po_attainment: doc.poAttainment,
+        mapping_locked: doc.mappingLocked || false,
+        is_active: true,
+        saved_at: doc.savedAt || new Date().toISOString(),
+    });
+
+    if (error) {
+        throw new Error(`Failed to save mapping: ${error.message}`);
     }
-
-    // 2. Insert new active mapping doc
-    const { data, error: insertError } = await supabase
-        .from("mappings")
-        .insert({
-            batch_year: mappingDoc.batchYear,
-            subject_id: mappingDoc.subjectId,
-            co_descriptions: mappingDoc.coDescriptions,
-            matrix: mappingDoc.matrix,
-            po_attainment: mappingDoc.poAttainment,
-            mapping_locked: mappingDoc.mappingLocked || false,
-            is_active: true,
-            saved_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-    if (insertError) {
-        throw new Error(`Failed to save new mapping: ${insertError.message}`);
-    }
-
-    return data.id;
 }
 
 export async function getCOMapping(
     batchYear: string,
     subjectId: string
 ): Promise<COMappingDoc | null> {
-    const { data, error } = await supabase
-        .from("mappings")
-        .select("*")
-        .eq("batch_year", batchYear)
-        .eq("subject_id", subjectId)
-        .eq("is_active", true)
-        .maybeSingle();
+    try {
+        const { data, error } = await supabase
+            .from("mappings")
+            .select("*")
+            .eq("batch_year", batchYear)
+            .eq("subject_id", subjectId)
+            .eq("is_active", true)
+            .maybeSingle();
 
-    if (error) {
-        throw new Error(`Failed to fetch mapping: ${error.message}`);
+        if (error) {
+            console.warn("Could not fetch mapping:", error.message);
+            return null;
+        }
+
+        return data ? mapMappingToFrontend(data) : null;
+    } catch (err: any) {
+        console.warn("Network error fetching mapping:", err?.message || err);
+        return null;
     }
-
-    return data ? mapMappingToFrontend(data) : null;
 }
 
 // ── Admin Analytics Queries ───────────────────────────────────────────────────
 
 export async function getAllAcademicYears(): Promise<string[]> {
-    const { data, error } = await supabase
-        .from("assessments")
-        .select("exam_config")
-        .eq("is_active", true);
+    try {
+        const { data, error } = await supabase
+            .from("assessments")
+            .select("exam_config")
+            .eq("is_active", true);
 
-    if (error) {
-        throw new Error(`Failed to fetch academic years: ${error.message}`);
-    }
-
-    const years = new Set<string>();
-    (data || []).forEach((row) => {
-        const ay = row.exam_config?.academicYear;
-        if (ay && typeof ay === "string") {
-            years.add(ay.trim().replace(/\s+/g, ""));
+        if (error) {
+            console.warn("Could not fetch academic years:", error.message);
+            return [];
         }
-    });
 
-    return Array.from(years).sort().reverse();
+        const years = new Set<string>();
+        (data || []).forEach((row) => {
+            const ay = row.exam_config?.academicYear;
+            if (ay && typeof ay === "string") {
+                years.add(ay.trim().replace(/\s+/g, ""));
+            }
+        });
+
+        return Array.from(years).sort().reverse();
+    } catch (err: any) {
+        console.warn("Network error fetching academic years:", err?.message || err);
+        return [];
+    }
 }
 
 export async function getSectionsForBatch(
     batchYear: string,
     subjectId?: string
 ): Promise<string[]> {
-    let query = supabase
-        .from("assessments")
-        .select("exam_config")
-        .eq("batch_year", batchYear)
-        .eq("is_active", true);
+    try {
+        let query = supabase
+            .from("assessments")
+            .select("exam_config")
+            .eq("batch_year", batchYear)
+            .eq("is_active", true);
 
-    if (subjectId) {
-        query = query.eq("subject_id", subjectId);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-        throw new Error(`Failed to fetch sections: ${error.message}`);
-    }
-
-    const sections = new Set<string>();
-    (data || []).forEach((row) => {
-        const sec = row.exam_config?.section;
-        if (sec && typeof sec === "string") {
-            sections.add(sec.trim().toUpperCase());
+        if (subjectId) {
+            query = query.eq("subject_id", subjectId);
         }
-    });
 
-    return Array.from(sections).sort();
+        const { data, error } = await query;
+        if (error) {
+            console.warn("Could not fetch sections:", error.message);
+            return [];
+        }
+
+        const sections = new Set<string>();
+        (data || []).forEach((row) => {
+            const sec = row.exam_config?.section;
+            if (sec && typeof sec === "string") {
+                sections.add(sec.trim().toUpperCase());
+            }
+        });
+
+        return Array.from(sections).sort();
+    } catch (err: any) {
+        console.warn("Network error fetching sections:", err?.message || err);
+        return [];
+    }
 }
 
 export async function getAllFacultyNames(): Promise<string[]> {
-    const { data, error } = await supabase
-        .from("assessments")
-        .select("exam_config")
-        .eq("is_active", true);
+    try {
+        const { data, error } = await supabase
+            .from("assessments")
+            .select("exam_config")
+            .eq("is_active", true);
 
-    if (error) {
-        throw new Error(`Failed to fetch faculty names: ${error.message}`);
-    }
-
-    const names = new Set<string>();
-    (data || []).forEach((row) => {
-        const name = row.exam_config?.facultyName;
-        if (name && typeof name === "string") {
-            names.add(cleanTitleCase(name));
+        if (error) {
+            console.warn("Could not fetch faculty names:", error.message);
+            return [];
         }
-    });
 
-    return Array.from(names).sort();
+        const names = new Set<string>();
+        (data || []).forEach((row) => {
+            const name = row.exam_config?.facultyName;
+            if (name && typeof name === "string") {
+                names.add(cleanTitleCase(name));
+            }
+        });
+
+        return Array.from(names).sort();
+    } catch (err: any) {
+        console.warn("Network error fetching faculty names:", err?.message || err);
+        return [];
+    }
 }
 
 export async function getAssessmentsForAdmin(filters: {
@@ -393,47 +422,53 @@ export async function getAssessmentsForAdmin(filters: {
     academicYear?: string;
     facultyName?: string;
 }): Promise<AssessmentDoc[]> {
-    let query = supabase
-        .from("assessments")
-        .select("*")
-        .eq("is_active", true);
+    try {
+        let query = supabase
+            .from("assessments")
+            .select("*")
+            .eq("is_active", true);
 
-    if (filters.batchYear) {
-        query = query.eq("batch_year", filters.batchYear);
-    }
-    if (filters.subjectId) {
-        query = query.eq("subject_id", filters.subjectId);
-    }
+        if (filters.batchYear) {
+            query = query.eq("batch_year", filters.batchYear);
+        }
+        if (filters.subjectId) {
+            query = query.eq("subject_id", filters.subjectId);
+        }
 
-    const { data, error } = await query;
-    if (error) {
-        throw new Error(`Failed to fetch admin assessments: ${error.message}`);
-    }
+        const { data, error } = await query;
+        if (error) {
+            console.warn("Could not fetch admin assessments:", error.message);
+            return [];
+        }
 
-    let docs = (data || []).map(mapAssessmentToFrontend);
+        let docs = (data || []).map(mapAssessmentToFrontend);
 
-    // Apply JSONB filters
-    if (filters.section) {
-        const targetSec = filters.section.trim().toUpperCase();
-        docs = docs.filter((d) => {
-            const sec = d.examConfig?.section;
-            return sec && typeof sec === "string" && sec.trim().toUpperCase() === targetSec;
-        });
-    }
-    if (filters.academicYear) {
-        const targetAy = filters.academicYear.trim().replace(/\s+/g, "");
-        docs = docs.filter((d) => {
-            const ay = d.examConfig?.academicYear;
-            return ay && typeof ay === "string" && ay.trim().replace(/\s+/g, "") === targetAy;
-        });
-    }
-    if (filters.facultyName) {
-        const targetFaculty = cleanTitleCase(filters.facultyName);
-        docs = docs.filter((d) => {
-            const faculty = d.examConfig?.facultyName;
-            return faculty && typeof faculty === "string" && cleanTitleCase(faculty) === targetFaculty;
-        });
-    }
+        // Apply JSONB filters
+        if (filters.section) {
+            const targetSec = filters.section.trim().toUpperCase();
+            docs = docs.filter((d) => {
+                const sec = d.examConfig?.section;
+                return sec && typeof sec === "string" && sec.trim().toUpperCase() === targetSec;
+            });
+        }
+        if (filters.academicYear) {
+            const targetAy = filters.academicYear.trim().replace(/\s+/g, "");
+            docs = docs.filter((d) => {
+                const ay = d.examConfig?.academicYear;
+                return ay && typeof ay === "string" && ay.trim().replace(/\s+/g, "") === targetAy;
+            });
+        }
+        if (filters.facultyName) {
+            const targetFaculty = cleanTitleCase(filters.facultyName);
+            docs = docs.filter((d) => {
+                const faculty = d.examConfig?.facultyName;
+                return faculty && typeof faculty === "string" && cleanTitleCase(faculty) === targetFaculty;
+            });
+        }
 
-    return docs;
+        return docs;
+    } catch (err: any) {
+        console.warn("Network error fetching admin assessments:", err?.message || err);
+        return [];
+    }
 }

@@ -76,10 +76,13 @@ export default function AttainmentDashboard() {
     // Load batch years on mount
     useEffect(() => {
         setLoadingBatches(true);
-        getAllBatchYears().then((years) => {
-            setBatchYears(years);
-            if (years.length > 0) setSelectedBatch(years[0]);
-        }).finally(() => setLoadingBatches(false));
+        getAllBatchYears()
+            .then((years) => {
+                setBatchYears(years || []);
+                if (years && years.length > 0) setSelectedBatch(years[0]);
+            })
+            .catch((err) => console.warn("Failed loading batch years:", err))
+            .finally(() => setLoadingBatches(false));
     }, []);
 
     // Load subjects when batch changes
@@ -89,10 +92,13 @@ export default function AttainmentDashboard() {
         setSelectedSubject("");
         setAssessments([]);
         setResult(null);
-        getSubjectsForBatch(selectedBatch).then((subs) => {
-            setSubjects(subs);
-            if (subs.length > 0) setSelectedSubject(subs[0]);
-        }).finally(() => setLoadingSubjects(false));
+        getSubjectsForBatch(selectedBatch)
+            .then((subs) => {
+                setSubjects(subs || []);
+                if (subs && subs.length > 0) setSelectedSubject(subs[0]);
+            })
+            .catch((err) => console.warn("Failed loading subjects:", err))
+            .finally(() => setLoadingSubjects(false));
     }, [selectedBatch]);
 
     // Load assessments + saved result when subject changes
@@ -103,15 +109,18 @@ export default function AttainmentDashboard() {
         Promise.all([
             getAssessmentsForBatch(selectedBatch, selectedSubject),
             getAttainmentResult(selectedBatch, selectedSubject),
-        ]).then(([docs, savedResult]) => {
-            setAssessments(docs);
-            if (savedResult) {
-                setResult(savedResult);
-                setIndirect(savedResult.indirectAttainment ?? zeroScores());
-            } else {
-                setIndirect(zeroScores());
-            }
-        }).finally(() => setLoadingAssessments(false));
+        ])
+            .then(([docs, savedResult]) => {
+                setAssessments(docs || []);
+                if (savedResult) {
+                    setResult(savedResult);
+                    setIndirect(savedResult.indirectAttainment ?? zeroScores());
+                } else {
+                    setIndirect(zeroScores());
+                }
+            })
+            .catch((err) => console.warn("Failed loading assessments or attainment:", err))
+            .finally(() => setLoadingAssessments(false));
     }, [selectedBatch, selectedSubject]);
 
     const handleCompute = async () => {
