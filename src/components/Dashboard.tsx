@@ -356,7 +356,7 @@ export default function Dashboard() {
                         />
                     )}
                     {activeTab === "analysis" && (
-                        <COAnalysis students={students} questionConfig={questionConfig} testType={examConfig.testType} />
+                        <COAnalysis students={students} questionConfig={questionConfig} testType={examConfig.testType} thresholds={examConfig.thresholds} />
                     )}
                     {activeTab === "visuals" && (
                         <Visualizations students={students} questionConfig={questionConfig} />

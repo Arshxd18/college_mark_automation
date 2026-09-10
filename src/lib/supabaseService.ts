@@ -95,7 +95,7 @@ export async function saveAssessment(
     const { batchYear, subjectId, testType } = examConfig;
 
     // 1. Compute CO stats
-    const computed = computeAssessmentCO(students, questionConfig, testType);
+    const computed = computeAssessmentCO(students, questionConfig, testType, examConfig.thresholds);
 
     // 2. Deactivate previous active assessments with same keys
     const { error: updateError } = await supabase

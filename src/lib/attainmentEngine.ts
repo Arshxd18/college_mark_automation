@@ -1,15 +1,15 @@
-import { AssessmentDoc, COScores, AttainmentResult, TestType, Student, QuestionConfig, COLabel } from "@/types";
+import { AssessmentDoc, COScores, AttainmentResult, TestType, Student, QuestionConfig, COLabel, AttainmentThresholds } from "@/types";
 import { calculateCOAttainment, calculateCOMaxMarks } from "./calculations";
 
 const CO_KEYS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
-const THRESHOLD = 60; // Min student CO% to count as "passed"
+const DEFAULT_STUDENT_TARGET_THRESHOLD = 60; // Min student CO% to count as "passed"
 
 // ── Types ──────────────────────────────────────────────────────
 
 export interface COAttainmentStats {
     attended: number;
     scoring60: number;
-    pct: number | null;   // % of students scoring ≥60%
+    pct: number | null;   // % of students scoring >= target score
     level: number | "N/A";
 }
 
@@ -22,32 +22,28 @@ export interface ComputedAssessment {
 // ── Level Thresholds ────────────────────────────────────────────
 
 /**
- * Standard threshold for Unit Test, Assignment, Semester:
- *   > 70%  → Level 3
- *   ≥ 60%  → Level 2
- *   ≥ 50%  → Level 1
- *   else   → Level 0
+ * Standard threshold for Unit Test, Assignment, Semester, CO Average:
+ *   >= Level3%  → Level 3 (Default: >= 80%)
+ *   >= Level2%  → Level 2 (Default: >= 70%)
+ *   >= Level1%  → Level 1 (Default: >= 60%)
+ *   else        → Level 0 (Default: < 60%)
  */
-export function getAttainmentLevel(pct: number): number {
-    if (pct >= 80) return 3;
-    if (pct >= 70) return 2;
-    if (pct >= 60) return 1;
+export function getAttainmentLevel(pct: number, thresholds?: AttainmentThresholds): number {
+    const l3 = thresholds?.level3Pct ?? 80;
+    const l2 = thresholds?.level2Pct ?? 70;
+    const l1 = thresholds?.level1Pct ?? 60;
+
+    if (pct >= l3) return 3;
+    if (pct >= l2) return 2;
+    if (pct >= l1) return 1;
     return 0;
 }
 
 /**
- * CO Average (Internal Assessment) threshold: matches Excel formula
- *   =IF(pct>=80, 3, IF(pct>=70, 2, IF(pct>=60, 1, 0)))
- *   ≥ 80% → Level 3
- *   ≥ 70% → Level 2
- *   ≥ 60% → Level 1
- *   else  → Level 0
+ * CO Average (Internal Assessment) threshold
  */
-export function getCOAvgAttainmentLevel(pct: number): number {
-    if (pct >= 80) return 3;
-    if (pct >= 70) return 2;
-    if (pct >= 60) return 1;
-    return 0;
+export function getCOAvgAttainmentLevel(pct: number, thresholds?: AttainmentThresholds): number {
+    return getAttainmentLevel(pct, thresholds);
 }
 
 // ── Per-Assessment CO Computation ─────────────────────────────
@@ -56,15 +52,16 @@ export function getCOAvgAttainmentLevel(pct: number): number {
  * Returns per-student CO %, CO max marks, and aggregated attainment stats
  * including level (0-3) for each CO.
  *
- * Used for: Unit Test, Assignment, Semester, Internal 1, Internal 2.
- * Level thresholds: ≥80→L3, ≥70→L2, ≥60→L1, else L0.
+ * Used for: Unit Test, Assignment, Semester, Internal 1, Internal 2, CO Average.
  */
 export function computeAssessmentCO(
     students: Student[],
     questionConfig: QuestionConfig,
-    testType?: TestType
+    testType?: TestType,
+    thresholds?: AttainmentThresholds
 ): ComputedAssessment {
     const coMax = calculateCOMaxMarks(questionConfig) as Record<COLabel, number>;
+    const targetStudentPct = thresholds?.targetStudentScorePct ?? DEFAULT_STUDENT_TARGET_THRESHOLD;
 
     const studentCO: Record<COLabel, number>[] = [];
     const totals: Record<COLabel, number[]> = {
@@ -94,9 +91,9 @@ export function computeAssessmentCO(
         } else {
             const vals = totals[co];
             const attended = vals.length;
-            const scoring60 = vals.filter(v => v >= THRESHOLD).length;
+            const scoring60 = vals.filter(v => v >= targetStudentPct).length;
             const pct = attended > 0 ? parseFloat(((scoring60 / attended) * 100).toFixed(2)) : 0;
-            const level = getAttainmentLevel(pct);
+            const level = getAttainmentLevel(pct, thresholds);
             attainment[co] = { attended, scoring60, pct, level };
         }
     }
@@ -118,15 +115,13 @@ export function computeAssessmentCO(
  */
 function computeCoAvgLevel(
     int1Doc: AssessmentDoc | undefined,
-    int2Doc: AssessmentDoc | undefined
+    int2Doc: AssessmentDoc | undefined,
+    thresholds?: AttainmentThresholds
 ): Record<COLabel, number> {
     const zero = (): Record<COLabel, number> => ({ co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 });
+    const targetStudentPct = thresholds?.targetStudentScorePct ?? DEFAULT_STUDENT_TARGET_THRESHOLD;
 
     if (!int1Doc && !int2Doc) return zero();
-
-    // Build per-student CO% maps indexed by student identifier (regNo or index)
-    // We need to merge student lists from both internals.
-    // Strategy: match by student index in same classroom. If only one doc, use it directly.
 
     const getStudentCO = (doc: AssessmentDoc): Record<COLabel, number>[] => {
         return doc.computed?.studentCO ?? [];
@@ -135,7 +130,6 @@ function computeCoAvgLevel(
     const int1CO = int1Doc ? getStudentCO(int1Doc) : [];
     const int2CO = int2Doc ? getStudentCO(int2Doc) : [];
 
-    // Build merged list: zip by position if both exist, otherwise use whichever is available
     const studentCount = Math.max(int1CO.length, int2CO.length);
     const avgRows: Record<COLabel, number>[] = [];
 
@@ -147,20 +141,17 @@ function computeCoAvgLevel(
         for (const co of CO_KEYS) {
             const v1 = row1 ? (row1[co] ?? 0) : 0;
             const v2 = row2 ? (row2[co] ?? 0) : 0;
-            // Excel: IF(AND(v1>0, v2>0), (v1+v2)/2, v1+v2)
             if (v1 > 0 && v2 > 0) {
                 merged[co] = (v1 + v2) / 2;
             } else {
-                merged[co] = v1 + v2; // If one is 0, use the other
+                merged[co] = v1 + v2;
             }
         }
         avgRows.push(merged);
     }
 
-    // Now compute attainment level per CO
     const result: Record<COLabel, number> = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
 
-    // Determine which COs are active (have mapped questions in either internal)
     const checkNA_int1 = int1Doc?.computed?.attainment;
     const checkNA_int2 = int2Doc?.computed?.attainment;
 
@@ -169,25 +160,20 @@ function computeCoAvgLevel(
         const naIn2 = !checkNA_int2 || checkNA_int2[co]?.level === "N/A";
 
         if (naIn1 && naIn2) {
-            // CO not mapped in either internal → skip (leave 0, mark N/A later in caller)
             result[co] = 0;
             continue;
         }
 
         const attended = avgRows.length;
-        const scoring60 = avgRows.filter(r => r[co] >= THRESHOLD).length;
+        const scoring60 = avgRows.filter(r => r[co] >= targetStudentPct).length;
         const pct = attended > 0 ? parseFloat(((scoring60 / attended) * 100).toFixed(2)) : 0;
-        result[co] = getCOAvgAttainmentLevel(pct);
+        result[co] = getCOAvgAttainmentLevel(pct, thresholds);
     }
 
     return result;
 }
 
 // ── Single-doc Level per CO ────────────────────────────────────
-/**
- * Returns the attainment level (0–3) per CO for a single assessment document.
- * Returns 0 for N/A COs.
- */
 function docCoLevel(doc: AssessmentDoc | undefined): Record<COLabel, number> {
     const result: Record<COLabel, number> = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
     if (!doc?.computed?.attainment) return result;
@@ -199,21 +185,12 @@ function docCoLevel(doc: AssessmentDoc | undefined): Record<COLabel, number> {
 }
 
 // ── Final Attainment Chain ─────────────────────────────────────
-/**
- * Computes the full attainment chain (CO Average → Internal → Direct → Final).
- *
- * Formulas (all values are LEVELS on 0–3 scale):
- *   CO Average = IF(AND(Int1>0,Int2>0),(Int1+Int2)/2,Int1+Int2) per student,
- *                then % students ≥60%, then >=80→L3,>=70→L2,>=60→L1
- *   Internal   = CO_Avg_Level×0.60 + UT_Level×0.15 + Assign_Level×0.25
- *   Direct     = SEE_Level×0.60 + Internal×0.40
- *   Final      = Direct×0.90 + Indirect×0.10
- */
 export function computeAttainment(
     docs: AssessmentDoc[],
     indirectAttainment: COScores,
     utWeight: number = 0.15,
     assignWeight: number = 0.25,
+    thresholds?: AttainmentThresholds
 ): {
     coAttainmentAvg: COScores;       // CO Average level per CO (IA)
     unitTestLevel: COScores;          // Unit Test level per CO
@@ -244,14 +221,12 @@ export function computeAttainment(
     if (!byType["Semester"]) missing.push("Semester");
 
     // ── Compute per-assessment LEVEL (0–3) per CO
-    // CO Average: uses uploaded CO Average template, OR merges Int1 + Int2 student-level and uses >=80→L3 threshold
     let coIA = zero() as COScores;
     if (byType["CO Average"]) {
         coIA = docCoLevel(byType["CO Average"]) as COScores;
     } else {
-        coIA = computeCoAvgLevel(byType["Internal 1"], byType["Internal 2"]) as COScores;
+        coIA = computeCoAvgLevel(byType["Internal 1"], byType["Internal 2"], thresholds) as COScores;
     }
-    // UT, Assignment, Semester: use their own pre-computed level from computeAssessmentCO
     const coUT = docCoLevel(byType["Unit Test"]);
     const coAS = docCoLevel(byType["Assignment"]);
     const coSEM = docCoLevel(byType["Semester"]);
@@ -263,7 +238,6 @@ export function computeAttainment(
         co1: "N/A", co2: "N/A", co3: "N/A", co4: "N/A", co5: "N/A", co6: "N/A",
     };
 
-    // Determine which COs are unmapped in all uploads
     const allDocs = Object.values(byType).filter(Boolean) as AssessmentDoc[];
     for (const co of CO_KEYS) {
         const allNA = allDocs.length > 0 &&
@@ -273,15 +247,13 @@ export function computeAttainment(
             continue;
         }
 
-        // Formula: Level arithmetic (0–3 scale throughout)
         internal[co] = parseFloat((coIA[co] * 0.60 + coUT[co] * utWeight + coAS[co] * assignWeight).toFixed(4));
         direct[co] = parseFloat((coSEM[co] * 0.60 + internal[co] * 0.40).toFixed(4));
         const ind = indirectAttainment[co] ?? 0;
         final_[co] = parseFloat((direct[co] * 0.90 + ind * 0.10).toFixed(4));
 
-        // Convert final (0–3 scale) back to % for level classification
         const finalPct = (final_[co] / 3) * 100;
-        levels[co] = getAttainmentLevel(finalPct);
+        levels[co] = getAttainmentLevel(finalPct, thresholds);
     }
 
     return {

@@ -301,7 +301,13 @@ export async function createAssessmentWorkbook(
     sheet.addRow([]); // Blank line
 
     // Section 3: Attainment Summary (L0 - L3 Calculation)
-    const computed = computeAssessmentCO(students, questionConfig, testType);
+    const thresholds = examConfig.thresholds;
+    const targetScore = thresholds?.targetStudentScorePct ?? 60;
+    const l3 = thresholds?.level3Pct ?? 80;
+    const l2 = thresholds?.level2Pct ?? 70;
+    const l1 = thresholds?.level1Pct ?? 60;
+
+    const computed = computeAssessmentCO(students, questionConfig, testType, thresholds);
     const summarySecRow = sheet.addRow(["COURSE OUTCOME (CO) ATTAINMENT SUMMARY & LEVELS"]);
     sheet.mergeCells(`A${summarySecRow.number}:R${summarySecRow.number}`);
     summarySecRow.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FF1E293B" } };
@@ -369,12 +375,12 @@ export async function createAssessmentWorkbook(
         return st && st.attended !== undefined ? st.attended : "-";
     });
 
-    addSummaryMetric("Students Scoring ≥ 60%", "Count of students achieving threshold of 60% mark", (co) => {
+    addSummaryMetric(`Students Scoring ≥ ${targetScore}%`, `Count of students achieving threshold of ${targetScore}% mark`, (co) => {
         const st = computed.attainment[co];
         return st && st.scoring60 !== undefined ? st.scoring60 : "-";
     });
 
-    addSummaryMetric("Percentage Scoring ≥ 60%", "% of attended students scoring ≥ 60% in this CO", (co) => {
+    addSummaryMetric(`Percentage Scoring ≥ ${targetScore}%`, `% of attended students scoring ≥ ${targetScore}% in this CO`, (co) => {
         const st = computed.attainment[co];
         return st && st.pct !== null && st.pct !== undefined ? `${st.pct.toFixed(1)}%` : "N/A";
     });
@@ -389,7 +395,7 @@ export async function createAssessmentWorkbook(
 
     // Attainment Rubric Reference Notes
     const rubricNote = sheet.addRow([
-        "Attainment Rubrics:  • Level 3 (High): ≥ 70% students score ≥ 60%   • Level 2 (Medium): 60% – 69% students score ≥ 60%   • Level 1 (Low): 50% – 59% students score ≥ 60%   • Level 0: < 50% students"
+        `Attainment Rubrics:  • Level 3 (High): ≥ ${l3}% students score ≥ ${targetScore}%   • Level 2 (Medium): ${l2}% – ${l3 - 1}% students score ≥ ${targetScore}%   • Level 1 (Low): ${l1}% – ${l2 - 1}% students score ≥ ${targetScore}%   • Level 0: < ${l1}% students`
     ]);
     sheet.mergeCells(`A${rubricNote.number}:R${rubricNote.number}`);
     rubricNote.font = { name: "Calibri", size: 9, italic: true, color: { argb: COLORS.textMuted } };

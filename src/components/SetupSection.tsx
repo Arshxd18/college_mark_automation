@@ -177,6 +177,185 @@ export default function SetupSection({
                     </div>
 
 
+                    {/* Attainment Rubrics & Dynamic Level Thresholds */}
+                    <div className="bg-gradient-to-br from-indigo-50/50 via-slate-50 to-blue-50/30 p-5 rounded-2xl border border-indigo-100 space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-md font-bold text-gray-900 flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                                    Attainment Rubrics & Dynamic Level Thresholds
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Configure individual student pass targets and class-wide percentage thresholds for Level 1, 2, and 3.
+                                </p>
+                            </div>
+
+                            {/* Preset Buttons */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[11px] font-semibold text-gray-500 mr-1">Presets:</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setExamConfig({
+                                        ...examConfig,
+                                        thresholds: { targetStudentScorePct: 60, level3Pct: 80, level2Pct: 70, level1Pct: 60 }
+                                    })}
+                                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-xs transition-colors"
+                                >
+                                    Standard NBA (80/70/60)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setExamConfig({
+                                        ...examConfig,
+                                        thresholds: { targetStudentScorePct: 60, level3Pct: 75, level2Pct: 65, level1Pct: 55 }
+                                    })}
+                                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-xs transition-colors"
+                                >
+                                    Tiered (75/65/55)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setExamConfig({
+                                        ...examConfig,
+                                        thresholds: { targetStudentScorePct: 60, level3Pct: 70, level2Pct: 60, level1Pct: 50 }
+                                    })}
+                                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-xs transition-colors"
+                                >
+                                    Moderate (70/60/50)
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Threshold Inputs Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* Student Pass Mark Target */}
+                            <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-2xs space-y-1.5">
+                                <label className="block text-xs font-bold text-gray-700">
+                                    Student Target Score
+                                </label>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-gray-400 font-bold">&ge;</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="100"
+                                        value={examConfig.thresholds?.targetStudentScorePct ?? 60}
+                                        onChange={(e) => setExamConfig({
+                                            ...examConfig,
+                                            thresholds: {
+                                                ...(examConfig.thresholds ?? {}),
+                                                targetStudentScorePct: Number(e.target.value) || 60,
+                                            }
+                                        })}
+                                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <span className="text-xs font-bold text-gray-500">%</span>
+                                </div>
+                                <p className="text-[10px] text-gray-400 leading-tight">Min CO mark % per student to pass</p>
+                            </div>
+
+                            {/* Level 3 Threshold */}
+                            <div className="bg-white p-3.5 rounded-xl border border-emerald-200/80 shadow-2xs space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-emerald-800">Level 3 (High)</label>
+                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">L3</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-gray-400 font-bold">&ge;</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="100"
+                                        value={examConfig.thresholds?.level3Pct ?? 80}
+                                        onChange={(e) => setExamConfig({
+                                            ...examConfig,
+                                            thresholds: {
+                                                ...(examConfig.thresholds ?? {}),
+                                                level3Pct: Number(e.target.value) || 80,
+                                            }
+                                        })}
+                                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    />
+                                    <span className="text-xs font-bold text-gray-500">%</span>
+                                </div>
+                                <p className="text-[10px] text-emerald-600 leading-tight">% of students achieving target</p>
+                            </div>
+
+                            {/* Level 2 Threshold */}
+                            <div className="bg-white p-3.5 rounded-xl border border-blue-200/80 shadow-2xs space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-blue-800">Level 2 (Medium)</label>
+                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">L2</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-gray-400 font-bold">&ge;</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="100"
+                                        value={examConfig.thresholds?.level2Pct ?? 70}
+                                        onChange={(e) => setExamConfig({
+                                            ...examConfig,
+                                            thresholds: {
+                                                ...(examConfig.thresholds ?? {}),
+                                                level2Pct: Number(e.target.value) || 70,
+                                            }
+                                        })}
+                                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    <span className="text-xs font-bold text-gray-500">%</span>
+                                </div>
+                                <p className="text-[10px] text-blue-600 leading-tight">% of students achieving target</p>
+                            </div>
+
+                            {/* Level 1 Threshold */}
+                            <div className="bg-white p-3.5 rounded-xl border border-amber-200/80 shadow-2xs space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-amber-800">Level 1 (Low)</label>
+                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">L1</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-gray-400 font-bold">&ge;</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="100"
+                                        value={examConfig.thresholds?.level1Pct ?? 60}
+                                        onChange={(e) => setExamConfig({
+                                            ...examConfig,
+                                            thresholds: {
+                                                ...(examConfig.thresholds ?? {}),
+                                                level1Pct: Number(e.target.value) || 60,
+                                            }
+                                        })}
+                                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                    />
+                                    <span className="text-xs font-bold text-gray-500">%</span>
+                                </div>
+                                <p className="text-[10px] text-amber-600 leading-tight">% of students achieving target</p>
+                            </div>
+                        </div>
+
+                        {/* Active Rubric Summary Bar */}
+                        <div className="bg-white/90 p-3 rounded-xl border border-gray-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <span className="font-bold text-gray-700">Active Rubric Formula:</span>
+                            <div className="flex items-center gap-2 font-mono text-[11px] flex-wrap">
+                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                    <strong>L3:</strong> &ge;{examConfig.thresholds?.level3Pct ?? 80}% students scored &ge;{examConfig.thresholds?.targetStudentScorePct ?? 60}%
+                                </span>
+                                <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+                                    <strong>L2:</strong> {examConfig.thresholds?.level2Pct ?? 70}%&ndash;{(examConfig.thresholds?.level3Pct ?? 80) - 1}% students scored &ge;{examConfig.thresholds?.targetStudentScorePct ?? 60}%
+                                </span>
+                                <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                                    <strong>L1:</strong> {examConfig.thresholds?.level1Pct ?? 60}%&ndash;{(examConfig.thresholds?.level2Pct ?? 70) - 1}% students scored &ge;{examConfig.thresholds?.targetStudentScorePct ?? 60}%
+                                </span>
+                                <span className="px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200">
+                                    <strong>L0:</strong> &lt;{examConfig.thresholds?.level1Pct ?? 60}% students
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="border-t border-gray-100 my-6"></div>
 
                     {/* Master CO Configuration */}

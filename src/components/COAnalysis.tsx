@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Student, QuestionConfig, TestType } from "@/types";
+import { Student, QuestionConfig, TestType, AttainmentThresholds } from "@/types";
 import { calculateCOAttainment, getPartWiseTotals, calculateCOMaxMarks, getFilteredUTMarksAndConfig, UT_DEFINITIONS } from "@/lib/calculations";
 import { computeAssessmentCO } from "@/lib/attainmentEngine";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ interface COAnalysisProps {
     students: Student[];
     questionConfig: QuestionConfig;
     testType?: TestType;
+    thresholds?: AttainmentThresholds;
 }
 
 // Weight multipliers for display — these match the contribution each test type has to Internal Attainment
@@ -21,10 +22,11 @@ const WEIGHT_BY_TYPE: Record<string, number> = {
     "Semester": 0.60,
 };
 
-export default function COAnalysis({ students, questionConfig, testType = "Internal 1" }: COAnalysisProps) {
+export default function COAnalysis({ students, questionConfig, testType = "Internal 1", thresholds }: COAnalysisProps) {
 
     const weight = WEIGHT_BY_TYPE[testType] ?? 1;
     const isWeighted = weight !== 1;
+    const targetScorePct = thresholds?.targetStudentScorePct ?? 60;
 
     const CO_LABELS = ["co1", "co2", "co3", "co4", "co5", "co6"] as const;
 
@@ -59,7 +61,7 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
             });
             return staticMaxMarks;
         }
-    }, [students, questionConfig, testType]);
+    }, [questionConfig, testType, students]);
 
     const partWiseTotals = useMemo(() => getPartWiseTotals(questionConfig), [questionConfig]);
 
@@ -268,7 +270,7 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                                 <td colSpan={7} className="bg-gray-50/50"></td>
                             </tr>
                             <tr>
-                                <td colSpan={2} className="p-3 border-r border-indigo-50 font-semibold bg-gray-50/50 sticky left-0 text-gray-700">No. of Students Scoring &ge;60%</td>
+                                <td colSpan={2} className="p-3 border-r border-indigo-50 font-semibold bg-gray-50/50 sticky left-0 text-gray-700">No. of Students Scoring &ge;{targetScorePct}%</td>
                                 {CO_LABELS.map(co => (
                                     <td key={co} className="p-3 border-r border-indigo-50 text-center text-sm font-medium bg-gray-50/50">
                                         {attainment[co]?.level !== "N/A" ? attainment[co].scoring60 : "-"}
@@ -277,7 +279,7 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
                                 <td colSpan={7} className="bg-gray-50/50"></td>
                             </tr>
                             <tr>
-                                <td colSpan={2} className="p-3 border-r border-indigo-50 font-semibold bg-gray-50/50 sticky left-0 text-gray-700">% of Students Scoring &ge;60%</td>
+                                <td colSpan={2} className="p-3 border-r border-indigo-50 font-semibold bg-gray-50/50 sticky left-0 text-gray-700">% of Students Scoring &ge;{targetScorePct}%</td>
                                 {CO_LABELS.map(co => (
                                     <td key={co} className="p-3 border-r border-indigo-50 text-center text-sm font-medium bg-gray-50/50">
                                         {attainment[co]?.level !== "N/A" ? attainment[co].pct : "-"}

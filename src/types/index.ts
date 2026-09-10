@@ -27,6 +27,20 @@ export type TestType =
   | "Assignment"
   | "CO Average";
 
+export interface AttainmentThresholds {
+  targetStudentScorePct?: number; // e.g. 60 (Min % marks a student must score in a CO to count as passed)
+  level3Pct?: number;             // e.g. 80 (Min % of students scoring >= target to achieve Level 3)
+  level2Pct?: number;             // e.g. 70 (Min % of students scoring >= target to achieve Level 2)
+  level1Pct?: number;             // e.g. 60 (Min % of students scoring >= target to achieve Level 1)
+}
+
+export const DEFAULT_THRESHOLDS: AttainmentThresholds = {
+  targetStudentScorePct: 60,
+  level3Pct: 80,
+  level2Pct: 70,
+  level1Pct: 60,
+};
+
 export interface ExamConfig {
   academicYear: string;
   batchYear: string;       // e.g. "2023-2027"
@@ -34,6 +48,7 @@ export interface ExamConfig {
   testType: TestType;
   section: string;         // e.g. "A", "B"
   facultyName: string;     // e.g. "Dr. A. Kumar"
+  thresholds?: AttainmentThresholds;
 }
 
 export interface QuestionConfig {
