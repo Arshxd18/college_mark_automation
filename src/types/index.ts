@@ -110,9 +110,9 @@ export interface AttainmentResult {
 
 export interface PIEntry {
   id: string;           // e.g. "PI-1.1.1"
-  competency: string;   // e.g. "Engineering Knowledge"
+  competency?: string;   // e.g. "Engineering Knowledge"
   descriptor: string;   // Full PI text description
-  poNumber: number;     // PO number this PI belongs to (1–12)
+  poNumber: number;     // PO number this PI belongs to (1–14)
 }
 
 export type MappingDecision = 3 | 2 | 1 | null;
@@ -135,8 +135,16 @@ export interface MappingCell {
   };
 }
 
+export type PIMappingSelection = Record<COLabel, Record<string, boolean>>;
+
 export interface POAttainmentRow {
   poId: string;
+  poCode?: string;
+  attribute?: string;
+  totalPIs?: number;
+  counts?: Record<COLabel, number>;
+  percentages?: Record<COLabel, number>;
+  levels?: Record<COLabel, number | null>;
   level: number | null;
   coMap: Record<COLabel, number | null>;
 }
@@ -145,7 +153,11 @@ export interface COMappingDoc {
   id?: string;
   batchYear: string;
   subjectId: string;
+  subjectName?: string;
+  department?: string;
   coDescriptions: Record<COLabel, string>;
+  poDescriptions?: Record<string, string>;
+  piSelections?: PIMappingSelection;
   matrix: Record<COLabel, Record<string, MappingCell>>;
   poAttainment: POAttainmentRow[];
   mappingLocked?: boolean;

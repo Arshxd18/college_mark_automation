@@ -62,7 +62,7 @@ function MappingPageInner() {
                     <div>
                         <h1 className="text-2xl font-extrabold text-gray-900">CO–PO–PSO Mapping</h1>
                         <p className="text-sm text-gray-500 mt-0.5">
-                            Hybrid NLP engine — Jaccard + Cosine TF-IDF — to match Course Outcomes against Programme Indicators
+                            R23 KEIS Relative Rubrics Engine — Course Outcomes to Performance Indicators (PI) Articulation Matrix & Master Mapping
                         </p>
                     </div>
                 </div>

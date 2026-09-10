@@ -206,8 +206,98 @@ function computePILevel(piRow: (number | null)[]): number | null {
     return 0;
 }
 
+import { DEFAULT_PO_DEFINITIONS, PODefinition } from "./poData";
+import { DEFAULT_PI_LIST, ExtendedPIEntry, getPIsByPO } from "./piData";
+import { PIMappingSelection } from "@/types";
+
+export function getDefaultPIMappingSelection(piList: ExtendedPIEntry[] = DEFAULT_PI_LIST): PIMappingSelection {
+    const sel: PIMappingSelection = {
+        co1: {}, co2: {}, co3: {}, co4: {}, co5: {}, co6: {}
+    };
+    for (const pi of piList) {
+        CO_KEYS.forEach(co => {
+            sel[co][pi.id] = !!pi.defaultYes?.[co];
+        });
+    }
+    return sel;
+}
+
 /**
- * Computes the final PO levels by aggressively averaging the derived PI levels.
+ * Computes relative PO attainment levels based on the % of PIs attained for each CO.
+ * Follows the exact relative grading formulas from the R23 KEIS workbook:
+ * Level 3 (High): >= 67%
+ * Level 2 (Med): 34% - 66%
+ * Level 1 (Low): 1% - 33%
+ * Unmapped: 0%
+ */
+export function computeRelativePOAttainment(
+    piSelections: PIMappingSelection,
+    piList: ExtendedPIEntry[] = DEFAULT_PI_LIST,
+    poDefs: PODefinition[] = DEFAULT_PO_DEFINITIONS
+): POAttainmentRow[] {
+    const pisByPO = getPIsByPO(piList);
+    const rows: POAttainmentRow[] = [];
+
+    for (const poDef of poDefs) {
+        const pis = pisByPO[poDef.id] || [];
+        const totalPIs = pis.length;
+
+        const counts: Record<COLabel, number> = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
+        const percentages: Record<COLabel, number> = { co1: 0, co2: 0, co3: 0, co4: 0, co5: 0, co6: 0 };
+        const levels: Record<COLabel, number | null> = { co1: null, co2: null, co3: null, co4: null, co5: null, co6: null };
+
+        CO_KEYS.forEach(co => {
+            let yesCount = 0;
+            pis.forEach(pi => {
+                if (piSelections[co]?.[pi.id]) {
+                    yesCount++;
+                }
+            });
+            counts[co] = yesCount;
+
+            if (totalPIs > 0) {
+                const pct = (yesCount / totalPIs) * 100;
+                percentages[co] = parseFloat(pct.toFixed(2));
+
+                if (yesCount === 0) {
+                    levels[co] = null;
+                } else if (pct >= 67) {
+                    levels[co] = 3;
+                } else if (pct >= 34) {
+                    levels[co] = 2;
+                } else {
+                    levels[co] = 1;
+                }
+            } else {
+                percentages[co] = 0;
+                levels[co] = null;
+            }
+        });
+
+        // Calculate average across non-null levels
+        const validLevels = CO_KEYS.map(co => levels[co]).filter((l): l is number => l !== null);
+        const avg = validLevels.length > 0
+            ? parseFloat((validLevels.reduce((a, b) => a + b, 0) / validLevels.length).toFixed(1))
+            : null;
+
+        rows.push({
+            poId: String(poDef.id),
+            poCode: poDef.code,
+            attribute: poDef.attribute,
+            totalPIs,
+            counts,
+            percentages,
+            levels,
+            level: avg,
+            coMap: levels,
+        });
+    }
+
+    return rows;
+}
+
+/**
+ * Legacy PO attainment function preserved for backward compatibility
  */
 export function computePOAttainment(
     matrix: Record<COLabel, Record<string, MappingCell>>,

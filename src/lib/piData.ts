@@ -1,242 +1,710 @@
-/**
- * piData.ts
- * Default NBA/ABET Programme Indicator (PI) dataset.
- * Faculty can override these values in the UI.
- *
- * Structure: 12 Programme Outcomes (PO1–PO12), each with 3 PIs.
- * Total: 36 PIs.
- */
-
 import { PIEntry } from "@/types";
 
-export const DEFAULT_PI_LIST: PIEntry[] = [
-    // PO1 — Engineering Knowledge
+export interface ExtendedPIEntry extends PIEntry {
+    defaultYes?: {
+        co1?: boolean;
+        co2?: boolean;
+        co3?: boolean;
+        co4?: boolean;
+        co5?: boolean;
+        co6?: boolean;
+    };
+}
+
+export const DEFAULT_PI_LIST: ExtendedPIEntry[] = [
+    // ── PO1   Engineering Knowledge ─────────────────────────────
     {
-        id: "PI-1.1.1",
+        id: "1.1.1",
         poNumber: 1,
-        competency: "Engineering Knowledge",
-        descriptor: "Ability to recall and describe fundamental principles of mathematics and engineering sciences",
+        competency: undefined,
+        descriptor: "Apply the knowledge of discrete structures, linear algebra, statistics, numerical techniques and theoretical computer science to solve problems",
+        defaultYes: {"co1":true,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
     },
     {
-        id: "PI-1.2.1",
+        id: "1.1.2",
         poNumber: 1,
-        competency: "Engineering Knowledge",
-        descriptor: "Ability to apply core engineering concepts to formulate and solve computational and analytical problems",
+        competency: undefined,
+        descriptor: "Apply the concepts of probability, statistics and queuing theory in modeling of computer based system, data and network protocols.",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":false,"co5":true,"co6":true},
     },
     {
-        id: "PI-1.3.1",
+        id: "1.2.1",
         poNumber: 1,
-        competency: "Engineering Knowledge",
-        descriptor: "Ability to integrate knowledge from mathematics, science and engineering to solve complex problems",
+        competency: undefined,
+        descriptor: "Apply laws of natural science to an engineering problem",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":false,"co6":false},
     },
-
-    // PO2 — Problem Analysis
     {
-        id: "PI-2.1.1",
+        id: "1.3.1",
+        poNumber: 1,
+        competency: undefined,
+        descriptor: "Apply engineering fundamentals",
+        defaultYes: {"co1":true,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "1.4.1",
+        poNumber: 1,
+        competency: undefined,
+        descriptor: "Apply theory and principles of computer science and information technology to solve an engineering problem.",
+        defaultYes: {"co1":true,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    // ── PO 2 Problem Analysis ─────────────────────────────
+    {
+        id: "2.1.1",
         poNumber: 2,
-        competency: "Problem Analysis",
-        descriptor: "Ability to identify engineering problems by gathering data, defining boundaries and system requirements",
+        competency: undefined,
+        descriptor: "Articulate problem statements and identify objectives",
+        defaultYes: {"co1":false,"co2":true,"co3":false,"co4":true,"co5":true,"co6":true},
     },
     {
-        id: "PI-2.2.1",
+        id: "2.1.2",
         poNumber: 2,
-        competency: "Problem Analysis",
-        descriptor: "Ability to formulate and model engineering problems using mathematical and simulation techniques",
+        competency: undefined,
+        descriptor: "Identify engineering systems, variables, and parameters to solve problems",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
     },
     {
-        id: "PI-2.3.1",
+        id: "2.1.3",
         poNumber: 2,
-        competency: "Problem Analysis",
-        descriptor: "Ability to analyze engineering problems and interpret results using critical thinking and inference",
+        competency: undefined,
+        descriptor: "Identify the mathematical, engineering and other relevant knowledge that applies to a given problem",
+        defaultYes: {"co1":true,"co2":true,"co3":true,"co4":true,"co5":false,"co6":true},
     },
-
-    // PO3 — Design/Development of Solutions
     {
-        id: "PI-3.1.1",
+        id: "2.2.1",
+        poNumber: 2,
+        competency: undefined,
+        descriptor: "Reframe complex problems into interconnected sub-problems",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "2.2.2",
+        poNumber: 2,
+        competency: undefined,
+        descriptor: "Identify, assemble and evaluate information and resources",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":false},
+    },
+    {
+        id: "2.2.3",
+        poNumber: 2,
+        competency: undefined,
+        descriptor: "Identify existing processes/solution methods for solving the problem, including forming justified approximations and assumptions",
+        defaultYes: {"co1":false,"co2":true,"co3":false,"co4":false,"co5":true,"co6":true},
+    },
+    {
+        id: "2.2.4",
+        poNumber: 2,
+        competency: undefined,
+        descriptor: "Compare and contrast alternative solution processes to select the best process",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "2.3.1",
+        poNumber: 2,
+        competency: undefined,
+        descriptor: "Combine scientific principles and engineering concepts to formulate models (mathematical or otherwise) of a system or process",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":false},
+    },
+    {
+        id: "2.3.2",
+        poNumber: 2,
+        competency: undefined,
+        descriptor: "Identify assumptions necessary to allow modeling at the required level of accuracy",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "2.4.1",
+        poNumber: 2,
+        competency: undefined,
+        descriptor: "Apply engineering mathematics and computations to solve mathematical models",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "2.4.2",
+        poNumber: 2,
+        competency: undefined,
+        descriptor: "Produce and validate results through skilful use of contemporary engineering tools",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "2.4.3",
+        poNumber: 2,
+        competency: undefined,
+        descriptor: "Identify sources of error in the solution process and limitations of the solution",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "2.4.4",
+        poNumber: 2,
+        competency: undefined,
+        descriptor: "Extract desired understanding and conclusions consistent with objectives and limitations",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    // ── PO3  Design/Development of Solutions ─────────────────────────────
+    {
+        id: "3.1.1",
         poNumber: 3,
-        competency: "Design/Development",
-        descriptor: "Ability to design systems, components or processes to meet desired specifications and constraints",
+        competency: undefined,
+        descriptor: "Recognize that need analysis is key to good problem definition",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
     },
     {
-        id: "PI-3.2.1",
+        id: "3.1.2",
         poNumber: 3,
-        competency: "Design/Development",
-        descriptor: "Ability to develop algorithms, software, circuits or systems addressing complex engineering problems",
+        competency: undefined,
+        descriptor: "Elicit and document engineering requirements from stakeholders",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
     },
     {
-        id: "PI-3.3.1",
+        id: "3.1.3",
         poNumber: 3,
-        competency: "Design/Development",
-        descriptor: "Ability to evaluate design alternatives considering safety, societal, economic and environmental factors",
+        competency: undefined,
+        descriptor: "Synthesize engineering requirements from a review of the state-of-the-art",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
     },
-
-    // PO4 — Conduct Investigations of Complex Problems
     {
-        id: "PI-4.1.1",
+        id: "3.1.4",
+        poNumber: 3,
+        competency: undefined,
+        descriptor: "Extract engineering requirements from relevant engineering codes and standards",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "3.1.5",
+        poNumber: 3,
+        competency: undefined,
+        descriptor: "Explore and synthesize requirements considering health, safety, environmental, cultural and societal issues",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "3.1.6",
+        poNumber: 3,
+        competency: undefined,
+        descriptor: "Determine design objectives, functional requirements and arrive at specifications",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "3.2.1",
+        poNumber: 3,
+        competency: undefined,
+        descriptor: "Apply formal idea generation tools to develop multiple engineering design solutions",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "3.2.2",
+        poNumber: 3,
+        competency: undefined,
+        descriptor: "Build models/prototypes/algorithms to develop a diverse set of design solutions",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "3.2.3",
+        poNumber: 3,
+        competency: undefined,
+        descriptor: "Identify suitable criteria for the evaluation of alternate design solutions",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "3.3.1",
+        poNumber: 3,
+        competency: undefined,
+        descriptor: "Apply formal decision-making tools to select optimal engineering design solutions",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "3.3.2",
+        poNumber: 3,
+        competency: undefined,
+        descriptor: "Consult with domain experts and stakeholders to select candidate design solution for further development",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "3.4.1",
+        poNumber: 3,
+        competency: undefined,
+        descriptor: "Refine a conceptual design into a detailed design within the existing constraints",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "3.4.2",
+        poNumber: 3,
+        competency: undefined,
+        descriptor: "Generate information through appropriate tests to improve or revise the design",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":true},
+    },
+    // ── PO 4  Conduct Investigations of Complex Problems ─────────────────────────────
+    {
+        id: "4.1.1",
         poNumber: 4,
-        competency: "Investigation",
-        descriptor: "Ability to design and conduct experiments relevant to engineering problems",
+        competency: undefined,
+        descriptor: "Define a problem, its scope and importance for purposes of investigation",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":false,"co6":true},
     },
     {
-        id: "PI-4.2.1",
+        id: "4.1.2",
         poNumber: 4,
-        competency: "Investigation",
-        descriptor: "Ability to collect, process and analyze experimental data using statistical methods",
+        competency: undefined,
+        descriptor: "Examine the relevant methods, tools and techniques of experiment design, system calibration, data acquisition, analysis and presentation",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
     },
     {
-        id: "PI-4.3.1",
+        id: "4.1.3",
         poNumber: 4,
-        competency: "Investigation",
-        descriptor: "Ability to draw valid conclusions from experimental results and experimental investigations",
+        competency: undefined,
+        descriptor: "Apply appropriate instrumentation and/or software tools to make measurements",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":true},
     },
-
-    // PO5 — Modern Tool Usage
     {
-        id: "PI-5.1.1",
+        id: "4.1.4",
+        poNumber: 4,
+        competency: undefined,
+        descriptor: "Establish a relationship between measured data and underlying principles",
+        defaultYes: {"co1":false,"co2":true,"co3":false,"co4":true,"co5":true,"co6":false},
+    },
+    {
+        id: "4.2.1",
+        poNumber: 4,
+        competency: undefined,
+        descriptor: "Design and develop an experimental approach, specify appropriate equipment and procedures",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":false,"co5":false,"co6":true},
+    },
+    {
+        id: "4.2.2",
+        poNumber: 4,
+        competency: undefined,
+        descriptor: "Understand the importance of statistical design of experiments and choose an appropriate experimental design plan",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "4.3.1",
+        poNumber: 4,
+        competency: undefined,
+        descriptor: "Use appropriate procedures, tools and techniques to conduct experiments and collect data",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "4.3.2",
+        poNumber: 4,
+        competency: undefined,
+        descriptor: "Analyze data for trends and correlations, stating possible errors and limitations",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "4.3.3",
+        poNumber: 4,
+        competency: undefined,
+        descriptor: "Represent data (in tabular and/or graphical forms) to facilitate analysis and explanation",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":false,"co5":true,"co6":true},
+    },
+    {
+        id: "4.3.4",
+        poNumber: 4,
+        competency: undefined,
+        descriptor: "Synthesize information and knowledge from raw data to reach appropriate conclusions",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    // ── PO 5  Engineering Tool Usage ─────────────────────────────
+    {
+        id: "5.1.1",
         poNumber: 5,
-        competency: "Modern Tool Usage",
-        descriptor: "Ability to select and use appropriate modern engineering software tools, techniques and resources",
+        competency: undefined,
+        descriptor: "Identify modern engineering tools such as AI/ML frameworks, data analytics platforms, modeling tools, techniques and resources",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":false,"co6":true},
     },
     {
-        id: "PI-5.2.1",
+        id: "5.1.2",
         poNumber: 5,
-        competency: "Modern Tool Usage",
-        descriptor: "Ability to apply computational tools for simulation, modeling and data analysis",
+        competency: undefined,
+        descriptor: "Create/adapt/modify/extend tools and techniques to solve engineering problems",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
     },
     {
-        id: "PI-5.3.1",
+        id: "5.2.1",
         poNumber: 5,
-        competency: "Modern Tool Usage",
-        descriptor: "Ability to understand the limitations of modern engineering tools in practical applications",
+        competency: undefined,
+        descriptor: "Identify the strengths and limitations of tools for (i) acquiring information, (ii) modeling and simulating, (iii) monitoring system performance, and (iv) creating engineering designs",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
     },
-
-    // PO6 — Engineer, Society & Environment Sustainability (Merged)
     {
-        id: "PI-6.1.1",
+        id: "5.2.2",
+        poNumber: 5,
+        competency: undefined,
+        descriptor: "Demonstrate proficiency in using discipline-specific tools",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":false,"co5":true,"co6":false},
+    },
+    {
+        id: "5.3.1",
+        poNumber: 5,
+        competency: undefined,
+        descriptor: "Discuss limitations and validate tools, techniques and resources",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "5.3.2",
+        poNumber: 5,
+        competency: undefined,
+        descriptor: "Verify the credibility of results from tool use with reference to accuracy, limitations, and assumptions",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    // ── PO 6  The Engineer and the World ─────────────────────────────
+    {
+        id: "6.1.1",
         poNumber: 6,
-        competency: "Engineer, Society & Sustainability",
-        descriptor: "Ability to understand the social, cultural, legal and environmental responsibilities of engineering practice",
+        competency: undefined,
+        descriptor: "Identify and describe various engineering roles particularly as pertains to protection of the public and public interest at global, regional and local levels",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":false,"co6":true},
     },
     {
-        id: "PI-6.2.1",
+        id: "6.2.1",
         poNumber: 6,
-        competency: "Engineer, Society & Sustainability",
-        descriptor: "Ability to assess the impact of engineering solutions on society, health, safety and the environment while promoting sustainable development",
+        competency: undefined,
+        descriptor: "Interpret legislation, regulations, codes, and standards relevant to the discipline and explain its contribution to the protection of the public",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":false,"co6":true},
     },
     {
-        id: "PI-6.3.1",
+        id: "6.3.1",
         poNumber: 6,
-        competency: "Engineer, Society & Sustainability",
-        descriptor: "Ability to design and recommend engineering solutions that address societal needs while ensuring environmental sustainability",
+        competency: undefined,
+        descriptor: "Identify risks/impacts in the life-cycle of an engineering product or activity",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":false,"co6":true},
     },
-
-    // PO7 — Ethics
     {
-        id: "PI-7.1.1",
+        id: "6.3.2",
+        poNumber: 6,
+        competency: undefined,
+        descriptor: "Understand the relationship between technical, socio-economic and environmental dimensions of sustainability",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":false,"co6":false},
+    },
+    {
+        id: "6.4.1",
+        poNumber: 6,
+        competency: undefined,
+        descriptor: "Describe management techniques for sustainable development",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":false,"co6":false},
+    },
+    {
+        id: "6.4.2",
+        poNumber: 6,
+        competency: undefined,
+        descriptor: "Apply principles of preventive engineering and sustainable development to engineering activities or products",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":false,"co6":false},
+    },
+    // ── PO 7 Ethics ─────────────────────────────
+    {
+        id: "7.1.1",
         poNumber: 7,
-        competency: "Ethics",
-        descriptor: "Ability to demonstrate professional and ethical responsibility in engineering practice",
+        competency: undefined,
+        descriptor: "Identify situations of unethical professional conduct and propose ethical alternatives",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":false,"co6":true},
     },
     {
-        id: "PI-7.2.1",
+        id: "7.2.1",
         poNumber: 7,
-        competency: "Ethics",
-        descriptor: "Ability to recognize ethical issues in engineering and apply appropriate professional standards",
+        competency: undefined,
+        descriptor: "Identify tenets of professional code of ethics",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":false,"co6":false},
     },
     {
-        id: "PI-7.3.1",
+        id: "7.2.2",
         poNumber: 7,
-        competency: "Ethics",
-        descriptor: "Ability to commit to professional code of ethics and understand intellectual property and confidentiality",
+        competency: undefined,
+        descriptor: "Examine and apply moral & ethical principles to known case studies",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":false,"co6":true},
     },
-
-    // PO8 — Individual and Team Work
     {
-        id: "PI-8.1.1",
+        id: "7.2.3",
+        poNumber: 7,
+        competency: undefined,
+        descriptor: "Demonstrate commitment to human values, diversity and inclusion",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":false,"co6":false},
+    },
+    // ── PO 8  Individual and Collaborative Team Work ─────────────────────────────
+    {
+        id: "8.1.1",
         poNumber: 8,
-        competency: "Individual & Team Work",
-        descriptor: "Ability to work effectively as an individual and contribute to multidisciplinary team tasks",
+        competency: undefined,
+        descriptor: "Recognize a variety of working and learning preferences; appreciate the value of diversity on a team",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":true},
     },
     {
-        id: "PI-8.2.1",
+        id: "8.1.2",
         poNumber: 8,
-        competency: "Individual & Team Work",
-        descriptor: "Ability to collaborate, coordinate and communicate within a team to achieve project objectives",
+        competency: undefined,
+        descriptor: "Implement the norms of practice (e.g. rules, roles, charters, agendas, etc.) of effective team work to accomplish a goal",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":false,"co5":true,"co6":true},
     },
     {
-        id: "PI-8.3.1",
+        id: "8.2.1",
         poNumber: 8,
-        competency: "Individual & Team Work",
-        descriptor: "Ability to lead and support teams in completing technical and engineering tasks",
+        competency: undefined,
+        descriptor: "Demonstrate effective communication, problem-solving, conflict resolution and leadership skills",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":false,"co6":true},
     },
-
-    // PO9 — Communication
     {
-        id: "PI-9.1.1",
+        id: "8.2.2",
+        poNumber: 8,
+        competency: undefined,
+        descriptor: "Treat other team members respectfully",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":true,"co6":true},
+    },
+    {
+        id: "8.2.3",
+        poNumber: 8,
+        competency: undefined,
+        descriptor: "Listen to other members",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":false},
+    },
+    {
+        id: "8.2.4",
+        poNumber: 8,
+        competency: undefined,
+        descriptor: "Maintain composure in difficult situations",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":true,"co6":true},
+    },
+    {
+        id: "8.3.1",
+        poNumber: 8,
+        competency: undefined,
+        descriptor: "Present results as a team, with smooth integration of contributions from all individual efforts",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":true},
+    },
+    // ── PO 9  Communication ─────────────────────────────
+    {
+        id: "9.1.1",
         poNumber: 9,
-        competency: "Communication",
-        descriptor: "Ability to communicate technical information clearly through written reports and documentation",
+        competency: undefined,
+        descriptor: "Read, understand and interpret technical and non-technical information",
+        defaultYes: {"co1":true,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
     },
     {
-        id: "PI-9.2.1",
+        id: "9.1.2",
         poNumber: 9,
-        competency: "Communication",
-        descriptor: "Ability to present engineering results effectively through oral presentations and visual aids",
+        competency: undefined,
+        descriptor: "Produce clear, well-constructed, and well-supported written engineering documents",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
     },
     {
-        id: "PI-9.3.1",
+        id: "9.1.3",
         poNumber: 9,
-        competency: "Communication",
-        descriptor: "Ability to understand and use technical communication in professional engineering contexts",
+        competency: undefined,
+        descriptor: "Create flow in a document or presentation - a logical progression of ideas so that the main point is clear",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
     },
-
-    // PO10 — Project Management and Finance
     {
-        id: "PI-10.1.1",
+        id: "9.2.1",
+        poNumber: 9,
+        competency: undefined,
+        descriptor: "Listen to and comprehend information, instructions, and viewpoints of others",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "9.2.2",
+        poNumber: 9,
+        competency: undefined,
+        descriptor: "Deliver effective oral presentations to technical and non-technical audiences",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "9.3.1",
+        poNumber: 9,
+        competency: undefined,
+        descriptor: "Create engineering-standard figures, reports and drawings to complement writing and presentations",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "9.3.2",
+        poNumber: 9,
+        competency: undefined,
+        descriptor: "Use a variety of media effectively to convey a message in a document or presentation",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "9.3.3",
+        poNumber: 9,
+        competency: undefined,
+        descriptor: "Communicate inclusively considering cultural, language and learning differences",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":true},
+    },
+    // ── PO 10  Project Management and Finance ─────────────────────────────
+    {
+        id: "10.1.1",
         poNumber: 10,
-        competency: "Project Management",
-        descriptor: "Ability to plan, execute and manage engineering projects within budget and time constraints",
+        competency: undefined,
+        descriptor: "Describe various economic and financial costs/benefits of an engineering activity",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":true,"co6":false},
     },
     {
-        id: "PI-10.2.1",
+        id: "10.1.2",
         poNumber: 10,
-        competency: "Project Management",
-        descriptor: "Ability to apply project management principles to multidisciplinary engineering projects",
+        competency: undefined,
+        descriptor: "Analyze different forms of financial statements to evaluate the financial status of an engineering project",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":false,"co6":false},
     },
     {
-        id: "PI-10.3.1",
+        id: "10.2.1",
         poNumber: 10,
-        competency: "Project Management",
-        descriptor: "Ability to understand entrepreneurship, financial planning and management in engineering projects",
-    },
-
-    // PO11 — Life-long Learning
-    {
-        id: "PI-11.1.1",
-        poNumber: 11,
-        competency: "Life-long Learning",
-        descriptor: "Ability to identify knowledge gaps and independently pursue self-learning through resources and research",
+        competency: undefined,
+        descriptor: "Analyze and select the most appropriate proposal based on economic and financial considerations",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":false,"co6":true},
     },
     {
-        id: "PI-11.2.1",
-        poNumber: 11,
-        competency: "Life-long Learning",
-        descriptor: "Ability to engage in continuing professional development and keep pace with emerging technologies",
+        id: "10.3.1",
+        poNumber: 10,
+        competency: undefined,
+        descriptor: "Identify the tasks required to complete an engineering activity and the resources required to complete the tasks",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":true,"co6":true},
     },
     {
-        id: "PI-11.3.1",
+        id: "10.3.2",
+        poNumber: 10,
+        competency: undefined,
+        descriptor: "Use project management tools to schedule an engineering project so it is completed on time and on budget",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":false,"co5":true,"co6":true},
+    },
+    // ── PO 11  Life-Long Learning ─────────────────────────────
+    {
+        id: "11.1.1",
         poNumber: 11,
-        competency: "Life-long Learning",
-        descriptor: "Ability to adapt to changing engineering disciplines and contribute to knowledge creation",
+        competency: undefined,
+        descriptor: "Describe the rationale for the requirement for continuing professional development",
+        defaultYes: {"co1":true,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "11.1.2",
+        poNumber: 11,
+        competency: undefined,
+        descriptor: "Identify deficiencies or gaps in knowledge and demonstrate an ability to source information to close this gap",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "11.2.1",
+        poNumber: 11,
+        competency: undefined,
+        descriptor: "Identify historic points of technological advance in engineering that required practitioners to seek education to stay current",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "11.2.2",
+        poNumber: 11,
+        competency: undefined,
+        descriptor: "Recognize the need and be able to clearly explain why it is vitally important to keep current regarding new developments in the field",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "11.3.1",
+        poNumber: 11,
+        competency: undefined,
+        descriptor: "Source and comprehend technical literature and other credible sources of information",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "11.3.2",
+        poNumber: 11,
+        competency: undefined,
+        descriptor: "Analyze sourced technical and popular information for feasibility, viability, sustainability, etc.",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    // ── PSO 1 AI Graduates should be able to evolve AI based efficient domain specific processes for effective decision making ─────────────────────────────
+    {
+        id: "PSO.1",
+        poNumber: 13,
+        competency: undefined,
+        descriptor: "design and implement AI-based, domain-specific process models",
+        defaultYes: {"co1":true,"co2":true,"co3":false,"co4":true,"co5":true,"co6":false},
+    },
+    {
+        id: "PSO.2",
+        poNumber: 13,
+        competency: undefined,
+        descriptor: "apply appropriate AI techniques (e.g., ML, analytics, optimization) to improve efficiency and effectiveness of domain-specific processes.",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":false,"co6":true},
+    },
+    {
+        id: "PSO.3",
+        poNumber: 13,
+        competency: undefined,
+        descriptor: "evaluate AI-driven solutions using relevant performance metrics to justify decisions and recommendations.",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":false,"co5":true,"co6":true},
+    },
+    // ── PSO 2 Graduates should be able to arrive at actionable foresight, insight, hindsight from data for solving business and engineering problems ─────────────────────────────
+    {
+        id: "PSO.1",
+        poNumber: 14,
+        competency: undefined,
+        descriptor: "Apply descriptive analytics to derive hindsight from historical data.",
+        defaultYes: {"co1":true,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "PSO.2",
+        poNumber: 14,
+        competency: undefined,
+        descriptor: "Use diagnostic and predictive analytics to generate insight into patterns, trends, and root causes.",
+        defaultYes: {"co1":false,"co2":true,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "PSO.3",
+        poNumber: 14,
+        competency: undefined,
+        descriptor: "Develop predictive and prescriptive models to produce foresight for future-oriented decisions.",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "PSO.4",
+        poNumber: 14,
+        competency: undefined,
+        descriptor: "Translate analytical results into actionable recommendations addressing real-world business and engineering challenges.",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "PSO.5",
+        poNumber: 14,
+        competency: undefined,
+        descriptor: "Validate decisions using appropriate metrics, visualizations, and domain constraints.",
+        defaultYes: {"co1":false,"co2":true,"co3":false,"co4":false,"co5":true,"co6":true},
+    },
+    // ── PSO 3 Graduates should be able to create, select and apply theoretical knowledge of AI and Data Analytics along with practical industrial tools to manage and solve wicked societal problems ─────────────────────────────
+    {
+        id: "PSO.1",
+        poNumber: 15,
+        competency: undefined,
+        descriptor: "Identify and formulate wicked societal problems considering technical, social, ethical, and environmental dimensions.",
+        defaultYes: {"co1":false,"co2":false,"co3":false,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "PSO.2",
+        poNumber: 15,
+        competency: undefined,
+        descriptor: "Select and apply appropriate AI and Data Analytics theories to address problem complexity and uncertainty.",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "PSO.3",
+        poNumber: 15,
+        competency: undefined,
+        descriptor: "Use industry-standard tools and platforms (e.g., analytics frameworks, ML platforms, visualization tools) for solution development.",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "PSO.4",
+        poNumber: 15,
+        competency: undefined,
+        descriptor: "Design and implement data-driven models that integrate multiple stakeholder perspectives.",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
+    },
+    {
+        id: "PSO.5",
+        poNumber: 15,
+        competency: undefined,
+        descriptor: "Evaluate solutions for effectiveness, scalability, ethical impact, and sustainability.",
+        defaultYes: {"co1":false,"co2":false,"co3":true,"co4":true,"co5":true,"co6":true},
     },
 ];
 
-/** Group PIs by PO number */
-export function getPIsByPO(piList: PIEntry[]): Record<number, PIEntry[]> {
-    const grouped: Record<number, PIEntry[]> = {};
+export function getPIsByPO(piList: ExtendedPIEntry[] = DEFAULT_PI_LIST): Record<number, ExtendedPIEntry[]> {
+    const map: Record<number, ExtendedPIEntry[]> = {};
     for (const pi of piList) {
-        if (!grouped[pi.poNumber]) grouped[pi.poNumber] = [];
-        grouped[pi.poNumber].push(pi);
+        if (!map[pi.poNumber]) map[pi.poNumber] = [];
+        map[pi.poNumber].push(pi);
     }
-    return grouped;
+    return map;
 }

@@ -49,11 +49,26 @@ function mapResultToFrontend(row: any): AttainmentResult {
 }
 
 function mapMappingToFrontend(row: any): COMappingDoc {
+    const rawCoDesc = row.co_descriptions || {};
+    const piSelections = row.pi_selections || rawCoDesc._piSelections || undefined;
+    const subjectName = row.subject_name || rawCoDesc._subjectName || undefined;
+    const department = row.department || rawCoDesc._department || undefined;
+
+    const cleanCoDesc: Record<string, string> = {};
+    for (const [k, v] of Object.entries(rawCoDesc)) {
+        if (!k.startsWith("_") && typeof v === "string") {
+            cleanCoDesc[k] = v;
+        }
+    }
+
     return {
         id: row.id,
         batchYear: row.batch_year,
         subjectId: row.subject_id,
-        coDescriptions: row.co_descriptions,
+        subjectName,
+        department,
+        coDescriptions: Object.keys(cleanCoDesc).length > 0 ? cleanCoDesc : rawCoDesc,
+        piSelections,
         matrix: row.matrix,
         poAttainment: row.po_attainment,
         mappingLocked: row.mapping_locked,
@@ -281,11 +296,18 @@ const mappingDocId = (batchYear: string, subjectId: string) =>
 export async function saveCOMapping(doc: COMappingDoc): Promise<void> {
     const id = mappingDocId(doc.batchYear, doc.subjectId);
     
+    const combinedCoDesc = {
+        ...(doc.coDescriptions || {}),
+        _piSelections: doc.piSelections || null,
+        _subjectName: doc.subjectName || null,
+        _department: doc.department || null,
+    };
+
     const { error } = await supabase.from("mappings").upsert({
         id: id,
         batch_year: doc.batchYear,
         subject_id: doc.subjectId,
-        co_descriptions: doc.coDescriptions,
+        co_descriptions: combinedCoDesc,
         matrix: doc.matrix,
         po_attainment: doc.poAttainment,
         mapping_locked: doc.mappingLocked || false,

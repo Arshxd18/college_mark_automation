@@ -1,689 +1,518 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { Brain, Save, RotateCcw, ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle, Info, Download } from "lucide-react";
-import { COLabel, MappingCell, MappingDecision, PIEntry, POAttainmentRow, COMappingDoc } from "@/types";
-import { matchAllCOs, computePOAttainment, toggleCell, resetOverrides } from "@/lib/coPiMatcher";
-import { getCOWarning } from "@/lib/textProcessor";
-import { DEFAULT_PI_LIST, getPIsByPO } from "@/lib/piData";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import {
+    Network,
+    Save,
+    RotateCcw,
+    Download,
+    CheckCircle,
+    AlertCircle,
+    Loader2,
+    ChevronDown,
+    ChevronUp,
+    Sparkles,
+    Sliders,
+    Table as TableIcon,
+    Layers,
+    FileSpreadsheet,
+    BookOpen
+} from "lucide-react";
+import { COLabel, POAttainmentRow, COMappingDoc, PIMappingSelection } from "@/types";
+import { DEFAULT_PO_DEFINITIONS, PODefinition } from "@/lib/poData";
+import { DEFAULT_PI_LIST, ExtendedPIEntry, getPIsByPO } from "@/lib/piData";
+import {
+    getDefaultPIMappingSelection,
+    computeRelativePOAttainment
+} from "@/lib/coPiMatcher";
 import { saveCOMapping, getAttainmentResult } from "@/lib/firestoreService";
 import { exportMappingToExcel } from "@/lib/exportMappingExcel";
 import { cn } from "@/lib/utils";
 
 const CO_KEYS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
-
-const CO_LABELS: Record<COLabel, string> = {
-    co1: "CO1", co2: "CO2", co3: "CO3", co4: "CO4", co5: "CO5", co6: "CO6",
-};
-
-const LEVEL_BADGE: Record<number, string> = {
-    0: "bg-red-100 text-red-700 border border-red-200",
-    1: "bg-orange-100 text-orange-700 border border-orange-200",
-    2: "bg-yellow-100 text-yellow-700 border border-yellow-200",
-    3: "bg-emerald-100 text-emerald-700 border border-emerald-200",
+const CO_DISPLAY_LABELS: Record<COLabel, string> = {
+    co1: "C304.1",
+    co2: "C304.2",
+    co3: "C304.3",
+    co4: "C304.4",
+    co5: "C304.5",
+    co6: "C304.6"
 };
 
 interface MappingTableProps {
     batchYear: string;
     subjectId: string;
+    subjectName?: string;
+    department?: string;
     initialDoc?: COMappingDoc | null;
 }
 
-// ── Cell component with confidence tooltip ─────────────────────
-function MappingCellUI({
-    cell,
-    onClick,
-    onHover,
-    onAcceptAI
-}: {
-    cell: MappingCell;
-    onClick: () => void;
-    onHover: () => void;
-    onAcceptAI: (level: number) => void;
-}) {
-    const [showTip, setShowTip] = useState(false);
+export default function MappingTable({
+    batchYear,
+    subjectId,
+    subjectName = "KNOWLEDGE ENGINEERING AND INTELLIGENCE SYSTEM",
+    department = "DEPARTMENT OF ARTIFICIAL INTELLIGENCE AND DATA SCIENCE",
+    initialDoc
+}: MappingTableProps) {
+    const [activeView, setActiveView] = useState<"matrix" | "pi_checklist" | "po_config">("matrix");
 
-    // AI Trigger with debounce
+    // PO and PI state
+    const [poDefs, setPoDefs] = useState<PODefinition[]>(DEFAULT_PO_DEFINITIONS);
+    const [piList] = useState<ExtendedPIEntry[]>(DEFAULT_PI_LIST);
+
+    // PI Selection state (which PI is "Yes" for which CO)
+    const [piSelections, setPiSelections] = useState<PIMappingSelection>(() => {
+        if (initialDoc?.piSelections) return initialDoc.piSelections;
+        return getDefaultPIMappingSelection(DEFAULT_PI_LIST);
+    });
+
+    const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
+    const [saveError, setSaveError] = useState("");
+    const [exporting, setExporting] = useState(false);
+
+    // Sync if initialDoc changes
     useEffect(() => {
-        if (!showTip) return;
-        if (cell.value !== null && cell.value !== 1) return;
-        if (cell.aiSuggestion && (cell.aiSuggestion.status === "loading" || cell.aiSuggestion.status === "done")) return;
+        if (initialDoc?.piSelections) {
+            setPiSelections(initialDoc.piSelections);
+        }
+    }, [initialDoc]);
 
-        const timer = setTimeout(() => {
-            onHover();
-        }, 400);
+    // Live Relative Grading Calculation
+    const poAttainment: POAttainmentRow[] = useMemo(() => {
+        return computeRelativePOAttainment(piSelections, piList, poDefs);
+    }, [piSelections, piList, poDefs]);
 
-        return () => clearTimeout(timer);
-    }, [showTip, cell, onHover]);
+    // Toggle a PI for a CO
+    const handleTogglePI = useCallback((co: COLabel, piId: string) => {
+        setPiSelections(prev => ({
+            ...prev,
+            [co]: {
+                ...prev[co],
+                [piId]: !prev[co]?.[piId]
+            }
+        }));
+    }, []);
 
-    const baseStyle = useMemo(() => {
-        if (cell.overridden) return "bg-yellow-50 border-2 border-yellow-400 text-yellow-800";
-        if (cell.value === 3) return "bg-emerald-100 text-emerald-800 border border-emerald-300";
-        if (cell.value === 2) return "bg-emerald-50 text-emerald-700 border border-emerald-200";
-        if (cell.value === 1) return "bg-amber-50 text-amber-700 border border-amber-200";
-        return "bg-gray-50 text-gray-400 border border-gray-100";
-    }, [cell]);
-
-    const label = cell.aiSuggestion?.status === "done" ? "💡" : cell.aiSuggestion?.status === "loading" ? "⏳" : cell.value !== null ? cell.value : "-";
-    const fullLabel = cell.value !== null ? `Level ${cell.value}` : "Not Mapped";
-
-    const confidenceLabel = cell.confidence >= 0.30 ? "HIGH" : 
-                            cell.confidence >= 0.18 ? "MEDIUM" : 
-                            cell.confidence >= 0.10 ? "LOW" : "NONE";
-
-    const labelColor = confidenceLabel === "HIGH" ? "text-emerald-400" :
-                       confidenceLabel === "MEDIUM" ? "text-yellow-400" :
-                       confidenceLabel === "LOW" ? "text-orange-400" : "text-gray-400";
-
-    return (
-        <td className="p-0 border-r border-gray-100 relative">
-            <div className="relative flex items-center justify-center p-1">
-                <button
-                    onClick={onClick}
-                    onMouseEnter={() => setShowTip(true)}
-                    onMouseLeave={() => setShowTip(false)}
-                    className={cn(
-                        "w-10 h-8 rounded-md text-[11px] font-bold transition-all hover:scale-110 hover:shadow-md cursor-pointer select-none",
-                        baseStyle,
-                        cell.overridden && "ring-2 ring-yellow-300"
-                    )}
-                    title="Click to toggle"
-                >
-                    {label}
-                </button>
-
-                {/* Tooltip */}
-                {showTip && (
-                    <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-[11px] rounded-lg p-3 shadow-xl pointer-events-none">
-                        <div className="font-bold mb-1 text-xs">{fullLabel} {cell.overridden ? "(Manual)" : "(Auto)"}</div>
-                        <div className="text-gray-300">Confidence: <span className={cn("font-bold font-mono", labelColor)}>{confidenceLabel}</span></div>
-                        <div className="text-gray-300 mt-1">Base: <span className="text-white font-mono">{cell.boost ? (cell.confidence - cell.boost).toFixed(2) : cell.confidence.toFixed(2)}</span></div>
-                        {cell.boost ? <div className="text-gray-300">Boost: <span className="text-emerald-400 font-mono">+{cell.boost.toFixed(2)}</span></div> : null}
-                        <div className="text-gray-300">Final Score: <span className="text-white font-bold font-mono">{cell.confidence.toFixed(2)}</span></div>
-                        {cell.matchedWords.length > 0 && (
-                            <div className="mt-1 text-gray-400">
-                                Common Tokens: <span className="text-blue-300">{cell.matchedWords.slice(0, 4).join(", ")}</span>
-                            </div>
-                        )}
-
-                        {cell.aiSuggestion?.status === "done" && (
-                            <div className="mt-3 p-2.5 bg-indigo-950 rounded border border-indigo-800 shadow-inner">
-                                <div className="text-indigo-400 font-bold mb-1.5 flex items-center gap-1 border-b border-indigo-800/50 pb-1">🧠 AI Insight</div>
-                                <div className="text-gray-300">Level: <span className="text-white font-bold">{cell.aiSuggestion.level}</span></div>
-                                <div className="text-gray-300">Confidence: <span className={cell.aiSuggestion.confidence === "high" ? "text-emerald-400 font-bold" : "text-yellow-400 font-bold"}>{cell.aiSuggestion.confidence.toUpperCase()}</span></div>
-                                
-                                <div className="mt-2 text-gray-400 font-medium text-[10px] uppercase">Reason:</div>
-                                <div className="text-gray-300 italic pointer-events-auto leading-relaxed text-[11px] bg-indigo-900/40 p-1.5 rounded">"{cell.aiSuggestion.reason}"</div>
-                                
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (cell.aiSuggestion) onAcceptAI(cell.aiSuggestion.level);
-                                    }}
-                                    className="mt-3 w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded text-center font-bold text-white shadow-sm pointer-events-auto transition-colors"
-                                >
-                                    Accept Suggestion
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 pointer-events-none" />
-                    </div>
-                )}
-            </div>
-        </td>
-    );
-}
-
-// ── Main Component ─────────────────────────────────────────────
-export default function MappingTable({ batchYear, subjectId, initialDoc }: MappingTableProps) {
-    const defaultDescs: Record<COLabel, string> = {
-        co1: "", co2: "", co3: "", co4: "", co5: "", co6: "",
+    // Reset to verified default dataset
+    const handleReset = () => {
+        if (confirm("Reset all PI mappings to default verified syllabus matrix?")) {
+            setPiSelections(getDefaultPIMappingSelection(DEFAULT_PI_LIST));
+            setPoDefs(DEFAULT_PO_DEFINITIONS);
+        }
     };
 
-    const [coDescriptions, setCoDescriptions] = useState<Record<COLabel, string>>(
-        initialDoc?.coDescriptions ?? defaultDescs
-    );
-    const [matrix, setMatrix] = useState<Record<COLabel, Record<string, MappingCell>> | null>(
-        initialDoc?.matrix ?? null
-    );
-    const [originalMatrix, setOriginalMatrix] = useState<Record<COLabel, Record<string, MappingCell>> | null>(
-        initialDoc?.matrix ?? null
-    );
-    const [piList] = useState<PIEntry[]>(DEFAULT_PI_LIST);
-    const [running, setRunning] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const [expandedPO, setExpandedPO] = useState<number | null>(1);
-    const [isFinalized, setIsFinalized] = useState(initialDoc?.mappingLocked ?? false);
-    
-    // AI Cache Map and Throttler
-    const aiCache = useRef<Record<string, NonNullable<MappingCell["aiSuggestion"]>>>({});
-    const lastAiFetch = useRef<number>(0);
+    // Save to database
+    const handleSave = async () => {
+        setSaveStatus("saving");
+        setSaveError("");
+        try {
+            const doc: COMappingDoc = {
+                batchYear,
+                subjectId,
+                coDescriptions: initialDoc?.coDescriptions || {
+                    co1: "", co2: "", co3: "", co4: "", co5: "", co6: ""
+                },
+                piSelections,
+                matrix: initialDoc?.matrix || ({} as any),
+                poAttainment,
+                savedAt: new Date().toISOString()
+            };
+            await saveCOMapping(doc);
+            setSaveStatus("success");
+            setTimeout(() => setSaveStatus("idle"), 3000);
+        } catch (err: any) {
+            console.error("Save mapping error:", err);
+            setSaveError(err.message || "Failed to save mapping");
+            setSaveStatus("error");
+            setTimeout(() => setSaveStatus("idle"), 5000);
+        }
+    };
 
-    // Auto-pull global CO Config
-    useEffect(() => {
-        if (!batchYear || !subjectId) return;
-        const load = async () => {
-            try {
-                const res = await getAttainmentResult(batchYear, subjectId);
-                if (res?.coDescriptions) {
-                    setCoDescriptions(res.coDescriptions);
-                } else if (!initialDoc) {
-                    alert("⚠️ Course Outcomes not found in global registry schema. Please open the Dashboard Assessment Setup to definitively submit syllabus fields.");
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        };
-        load();
-    }, [batchYear, subjectId, initialDoc]);
+    // Excel Export
+    const handleExport = async () => {
+        setExporting(true);
+        try {
+            await exportMappingToExcel(
+                poAttainment,
+                piSelections,
+                batchYear,
+                subjectId,
+                subjectName,
+                department,
+                poDefs,
+                piList
+            );
+        } catch (err) {
+            console.error("Excel export error:", err);
+            alert("Failed to export Excel workbook.");
+        } finally {
+            setExporting(false);
+        }
+    };
 
-    const filledCOs = CO_KEYS.filter(co => coDescriptions[co] && coDescriptions[co].trim().length > 0).length;
-
-    // Group PIs by PO for accordion display
     const pisByPO = useMemo(() => getPIsByPO(piList), [piList]);
-    const poNumbers = useMemo(() => Object.keys(pisByPO).map(Number).sort((a, b) => a - b), [pisByPO]);
-
-    // Compute PO attainment from current matrix
-    const poAttainment = useMemo<POAttainmentRow[]>(() => {
-        if (!matrix) return [];
-        return computePOAttainment(matrix, piList, filledCOs);
-    }, [matrix, piList, filledCOs]);
-
-    // Run NLP mapping
-    const handleRunMapping = useCallback(async () => {
-        const hasContent = CO_KEYS.some(co => coDescriptions[co].trim().length > 0);
-        if (!hasContent) return;
-        setRunning(true);
-        // Yield to render loading state
-        await new Promise(r => setTimeout(r, 50));
-        const result = matchAllCOs(coDescriptions, piList);
-        setMatrix(result);
-        setOriginalMatrix(result);
-        setSaved(false);
-        setRunning(false);
-    }, [coDescriptions, piList]);
-
-    // Toggle a cell
-    const handleToggle = useCallback((co: COLabel, piId: string) => {
-        if (!matrix || isFinalized) return;
-        setMatrix(prev => prev ? toggleCell(prev, co, piId) : prev);
-        setSaved(false);
-    }, [matrix, isFinalized]);
-
-    // AI suggestion fetch on hover
-    const handleHoverCell = useCallback(async (co: COLabel, piId: string) => {
-        if (!matrix || isFinalized) return;
-        const cell = matrix[co]?.[piId];
-        if (!cell || (cell.value !== null && cell.value !== 1)) return;
-        if (cell.aiSuggestion && cell.aiSuggestion.status !== "idle") return; // Already fetching or done
-
-        const coText = coDescriptions[co]?.trim();
-        const piText = piList.find(p => p.id === piId)?.descriptor?.trim();
-        if (!coText || !piText) return;
-
-        const cacheKey = `${coText}|||${piText}`;
-
-        // 1. Check Cache
-        if (aiCache.current[cacheKey]) {
-            setMatrix(prev => {
-                if (!prev) return prev;
-                return {
-                    ...prev,
-                    [co]: {
-                        ...prev[co],
-                        [piId]: { ...prev[co][piId], aiSuggestion: aiCache.current[cacheKey] }
-                    }
-                };
-            });
-            return;
-        }
-
-        // Throttle Guard (Prevent Rapid API Flooding)
-        const now = Date.now();
-        if (now - lastAiFetch.current < 300) return;
-        lastAiFetch.current = now;
-
-        // 2. Set to Loading
-        setMatrix(prev => {
-            if (!prev) return prev;
-            return {
-                ...prev,
-                [co]: {
-                    ...prev[co],
-                    [piId]: { ...prev[co][piId], aiSuggestion: { status: "loading", level: 0, confidence: "low", reason: "" } }
-                }
-            };
-        });
-
-        // 3. Fetch
-        try {
-            const res = await fetch("/api/ai-mapping", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ coText, piText })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Failed AI fetch");
-
-            const suggestion: NonNullable<MappingCell["aiSuggestion"]> = {
-                status: "done",
-                level: data.level,
-                reason: data.reason,
-                confidence: data.confidence
-            };
-
-            aiCache.current[cacheKey] = suggestion;
-
-            setMatrix(prev => {
-                if (!prev) return prev;
-                return {
-                    ...prev,
-                    [co]: {
-                        ...prev[co],
-                        [piId]: { ...prev[co][piId], aiSuggestion: suggestion }
-                    }
-                };
-            });
-        } catch (e) {
-            console.error("AI Mapping Failure:", e);
-            setMatrix(prev => {
-                if (!prev) return prev;
-                return {
-                    ...prev,
-                    [co]: {
-                        ...prev[co],
-                        [piId]: { ...prev[co][piId], aiSuggestion: { status: "error", level: 0, confidence: "low", reason: "" } }
-                    }
-                };
-            });
-        }
-    }, [matrix, coDescriptions, piList, isFinalized]);
-
-    const handleAcceptAI = useCallback((co: COLabel, piId: string, level: number) => {
-        if (!matrix || isFinalized) return;
-        setMatrix(prev => {
-            if (!prev) return prev;
-            return {
-                ...prev,
-                [co]: {
-                    ...prev[co],
-                    [piId]: {
-                        ...prev[co][piId],
-                        value: level as MappingDecision,
-                        overridden: true,
-                        aiMeta: { used: true, source: "ai" }
-                    }
-                }
-            };
-        });
-        setSaved(false);
-    }, [matrix, isFinalized]);
-
-    // Reset overrides
-    const handleReset = useCallback(() => {
-        if (!matrix || !originalMatrix) return;
-        setMatrix(resetOverrides(matrix, originalMatrix));
-        setSaved(false);
-    }, [matrix, originalMatrix]);
-
-    // Save to Firestore
-    const handleSave = useCallback(async () => {
-        if (!matrix) return;
-        setSaving(true);
-        try {
-            await saveCOMapping({
-                batchYear,
-                subjectId,
-                coDescriptions,
-                matrix,
-                poAttainment,
-                mappingLocked: isFinalized,
-                savedAt: new Date().toISOString(),
-            });
-            setSaved(true);
-            setTimeout(() => setSaved(false), 3000);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setSaving(false);
-        }
-    }, [matrix, batchYear, subjectId, coDescriptions, poAttainment, isFinalized]);
-
-    const handleFinalize = useCallback(async () => {
-        if (!matrix) return;
-        setIsFinalized(true);
-        setSaving(true);
-        try {
-            await saveCOMapping({
-                batchYear,
-                subjectId,
-                coDescriptions,
-                matrix,
-                poAttainment,
-                mappingLocked: true,
-                savedAt: new Date().toISOString(),
-            });
-            setSaved(true);
-            setTimeout(() => setSaved(false), 3000);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setSaving(false);
-        }
-    }, [matrix, batchYear, subjectId, coDescriptions, poAttainment]);
-
-    const handleExport = useCallback(() => {
-        if (!matrix) return;
-        exportMappingToExcel(matrix, piList, poAttainment, batchYear, subjectId, pisByPO);
-    }, [matrix, piList, poAttainment, batchYear, subjectId, pisByPO]);
-
-    const hasOverrides = useMemo(() => {
-        if (!matrix) return false;
-        return CO_KEYS.some(co =>
-            Object.values(matrix[co] ?? {}).some(cell => cell.overridden)
-        );
-    }, [matrix]);
-
-
 
     return (
         <div className="space-y-6">
-            {/* ── CO Description Inputs ─────────────────────────── */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-                    <div className="p-2 bg-indigo-50 rounded-lg">
-                        <Brain className="w-5 h-5 text-indigo-600" />
-                    </div>
-                    <div>
-                        <h2 className="font-bold text-gray-900">Course Outcome Descriptions</h2>
-                        <p className="text-xs text-gray-500">COs are formally managed in Assessment Setup. Return there to modify the global baseline.</p>
-                    </div>
-                    <div className="ml-auto text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                        {filledCOs}/6 filled
-                    </div>
-                </div>
-
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {CO_KEYS.map((co) => (
-                        <div key={co} className="space-y-1">
-                            <label className="block text-xs font-bold text-indigo-700 uppercase tracking-wider">
-                                {CO_LABELS[co]}
-                            </label>
-                            <textarea
-                                disabled={true}
-                                rows={3}
-                                value={coDescriptions[co]}
-                                onChange={e => setCoDescriptions(prev => ({ ...prev, [co]: e.target.value }))}
-                                placeholder={`Describe what students will be able to do in ${CO_LABELS[co]}...`}
-                                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 placeholder:text-gray-300 opacity-80 cursor-not-allowed resize-none transition-all"
-                            />
-                            {coDescriptions[co]?.trim() && (() => {
-                                const txtLength = coDescriptions[co].trim().length;
-                                if (txtLength > 0 && txtLength < 20) {
-                                    return (
-                                        <p className="text-[11px] text-orange-600 flex items-center gap-1">
-                                            <AlertTriangle className="w-3 h-3 flex-shrink-0" />CO description too short for accurate mapping
-                                        </p>
-                                    );
-                                }
-                                const warn = getCOWarning(coDescriptions[co]);
-                                return warn ? (
-                                    <p className="text-[11px] text-orange-600 flex items-center gap-1">
-                                        <AlertTriangle className="w-3 h-3 flex-shrink-0" />{warn}
-                                    </p>
-                                ) : null;
-                            })()}
-                        </div>
-                    ))}
-                </div>
-
-                {/* Action buttons */}
-                <div className="px-6 pb-5 flex flex-wrap items-center gap-3">
+            {/* Top Toolbar */}
+            <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                {/* Navigation Pills */}
+                <div className="flex bg-gray-100 p-1.5 rounded-xl border border-gray-200">
                     <button
-                        onClick={handleRunMapping}
-                        disabled={running || filledCOs === 0}
+                        onClick={() => setActiveView("matrix")}
                         className={cn(
-                            "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm",
-                            running || filledCOs === 0
-                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                : "bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md active:scale-95"
+                            "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                            activeView === "matrix"
+                                ? "bg-white text-indigo-700 shadow-xs ring-1 ring-black/5"
+                                : "text-gray-600 hover:text-gray-900"
                         )}
                     >
-                        {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
-                        {running ? "Running NLP..." : "Run NLP Mapping"}
+                        <TableIcon className="w-4 h-4 text-indigo-600" />
+                        Course Outcome Matrix
+                    </button>
+                    <button
+                        onClick={() => setActiveView("pi_checklist")}
+                        className={cn(
+                            "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                            activeView === "pi_checklist"
+                                ? "bg-white text-indigo-700 shadow-xs ring-1 ring-black/5"
+                                : "text-gray-600 hover:text-gray-900"
+                        )}
+                    >
+                        <Layers className="w-4 h-4 text-violet-600" />
+                        CO–PO with PI Checklist
+                    </button>
+                    <button
+                        onClick={() => setActiveView("po_config")}
+                        className={cn(
+                            "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                            activeView === "po_config"
+                                ? "bg-white text-indigo-700 shadow-xs ring-1 ring-black/5"
+                                : "text-gray-600 hover:text-gray-900"
+                        )}
+                    >
+                        <Sliders className="w-4 h-4 text-emerald-600" />
+                        PO & PSO Statements
+                    </button>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2.5 flex-wrap">
+                    <button
+                        onClick={handleReset}
+                        className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition-all cursor-pointer"
+                        title="Reset to standard template"
+                    >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Reset
                     </button>
 
-                    {matrix && (
-                        <>
-                            {hasOverrides && (
-                                <button
-                                    onClick={handleReset}
-                                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-yellow-300 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition-all"
-                                >
-                                    <RotateCcw className="w-4 h-4" />
-                                    Reset Overrides
-                                </button>
-                            )}
-                            <button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className={cn(
-                                    "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ml-auto",
-                                    saved
-                                        ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
-                                        : "bg-violet-600 text-white hover:bg-violet-700 shadow-sm hover:shadow-md active:scale-95"
-                                )}
-                            >
-                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                                {saving ? "Saving..." : saved ? "Saved!" : "Save to Supabase"}
-                            </button>
-                            <button
-                                onClick={handleExport}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm hover:shadow-md active:scale-95"
-                            >
-                                <Download className="w-4 h-4" />
-                                Export Excel
-                            </button>
-                        </>
-                    )}
+                    <button
+                        onClick={handleExport}
+                        disabled={exporting}
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 rounded-xl shadow-xs transition-all cursor-pointer"
+                    >
+                        {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                        {exporting ? "Generating..." : "Export Excel"}
+                    </button>
+
+                    <button
+                        onClick={handleSave}
+                        disabled={saveStatus === "saving"}
+                        className={cn(
+                            "flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer",
+                            saveStatus === "success" ? "bg-emerald-600" :
+                            saveStatus === "error" ? "bg-red-600" :
+                            saveStatus === "saving" ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
+                        )}
+                    >
+                        {saveStatus === "saving" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
+                         saveStatus === "success" ? <CheckCircle className="w-3.5 h-3.5" /> :
+                         saveStatus === "error" ? <AlertCircle className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                        {saveStatus === "success" ? "Saved to Supabase!" : saveStatus === "saving" ? "Saving..." : "Save Mapping"}
+                    </button>
                 </div>
             </div>
 
-            {/* ── Legend ─────────────────────────────────────────── */}
-            {matrix && (
-                <div className="flex flex-wrap gap-3 items-center text-xs">
-                    <span className="text-gray-500 font-medium">Legend:</span>
-                    {[
-                        { label: "Level 3 (Strong)", cls: "bg-emerald-100 text-emerald-800 border border-emerald-300" },
-                        { label: "Level 2 (Moderate)", cls: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
-                        { label: "Level 1 (Slight)", cls: "bg-amber-50 text-amber-700 border border-amber-200" },
-                        { label: "Not Mapped (-)", cls: "bg-gray-50 text-gray-400 border border-gray-100" },
-                        { label: "Overridden", cls: "bg-yellow-50 text-yellow-800 border-2 border-yellow-400" },
-                    ].map(({ label, cls }) => (
-                        <span key={label} className={cn("px-2.5 py-1 rounded-md font-medium", cls)}>
-                            {label}
-                        </span>
-                    ))}
-                    <span className="ml-2 flex items-center gap-1 text-gray-400">
-                        <Info className="w-3 h-3" /> Click any cell to toggle
-                    </span>
+            {/* Error Message */}
+            {saveStatus === "error" && saveError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                    <span>Failed to save mapping: {saveError}</span>
                 </div>
             )}
 
-            {/* ── Matrix Table (grouped by PO) ────────────────────── */}
-            {matrix && (
-                <div className="space-y-3">
-                    {poNumbers.map((po) => {
-                        const pisInPO = pisByPO[po] ?? [];
-                        const isOpen = expandedPO === po;
-                        const competency = pisInPO[0]?.competency ?? `PO${po}`;
+            {/* ───────────────────────────────────────────────────────────── */}
+            {/* VIEW 1: COURSE OUTCOME ARTICULATION MATRIX (Screenshot Match) */}
+            {/* ───────────────────────────────────────────────────────────── */}
+            {activeView === "matrix" && (
+                <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden animate-in fade-in duration-300">
+                    {/* Header Banner */}
+                    <div className="p-6 text-center border-b border-gray-100 bg-gradient-to-b from-gray-50/80 to-white">
+                        <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">{department}</h2>
+                        <div className="flex items-center justify-center gap-3 mt-1.5">
+                            <span className="px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-mono text-xs font-black">{subjectId}</span>
+                            <span className="text-sm font-bold text-gray-800">{subjectName}</span>
+                        </div>
+                        <h3 className="text-xs font-black text-gray-700 uppercase tracking-widest mt-3">COURSE OUTCOMES</h3>
+                        <p className="text-xs text-gray-500 font-medium">Mapping Course Outcomes to Program Outcomes</p>
+                    </div>
+
+                    {/* Output Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-center border-collapse">
+                            <thead>
+                                {/* Attributes Row */}
+                                <tr className="bg-[#D9EAD3] text-gray-900 font-bold border-b border-gray-300">
+                                    <th className="p-3 border-r border-gray-300 font-black text-left">Attributes</th>
+                                    {poDefs.map(p => (
+                                        <th key={p.id} className="p-2.5 border-r border-gray-300 font-bold whitespace-nowrap min-w-[70px]">
+                                            {p.attribute}
+                                        </th>
+                                    ))}
+                                </tr>
+                                {/* PO Codes Row */}
+                                <tr className="bg-[#D9D2E9] text-gray-900 font-bold border-b border-gray-300">
+                                    <th className="p-2 border-r border-gray-300 font-black text-left">CO&apos;s</th>
+                                    {poDefs.map(p => (
+                                        <th key={p.id} className="p-2 border-r border-gray-300 font-extrabold text-indigo-950">
+                                            {p.shortCode}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 font-bold">
+                                {CO_KEYS.map((co, idx) => {
+                                    const coLabel = CO_DISPLAY_LABELS[co];
+
+                                    return (
+                                        <tr key={co} className="hover:bg-indigo-50/30 transition-colors">
+                                            <td className="p-2.5 border-r border-gray-300 bg-[#FCE5CD] text-gray-900 font-black text-left">
+                                                {coLabel}
+                                            </td>
+                                            {poDefs.map(poDef => {
+                                                const poRow = poAttainment.find(r => r.poId === String(poDef.id));
+                                                const lvl = poRow?.levels?.[co];
+
+                                                return (
+                                                    <td key={poDef.id} className="p-2 border-r border-gray-200">
+                                                        {lvl !== null && lvl !== undefined ? (
+                                                            <span className={cn(
+                                                                "inline-flex items-center justify-center w-7 h-7 rounded-md font-black text-xs shadow-2xs",
+                                                                lvl === 3 ? "bg-emerald-100 text-emerald-800 border border-emerald-300" :
+                                                                lvl === 2 ? "bg-yellow-100 text-yellow-800 border border-yellow-300" :
+                                                                "bg-orange-100 text-orange-800 border border-orange-300"
+                                                            )}>
+                                                                {lvl}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400 font-medium">—</span>
+                                                        )}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    );
+                                })}
+
+                                {/* CO's AVG Row */}
+                                <tr className="bg-[#F4CCCC] text-gray-950 font-black border-t-2 border-gray-400 text-sm">
+                                    <td className="p-3 border-r border-gray-300 text-left font-black">
+                                        CO&apos;s AVG
+                                    </td>
+                                    {poDefs.map(poDef => {
+                                        const poRow = poAttainment.find(r => r.poId === String(poDef.id));
+                                        const avg = poRow?.level;
+
+                                        return (
+                                            <td key={poDef.id} className="p-2 border-r border-gray-300">
+                                                {avg !== null && avg !== undefined ? avg.toFixed(1) : "—"}
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Correlation Legend */}
+                    <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4">
+                        <div className="inline-flex items-center border border-gray-300 rounded-xl overflow-hidden bg-[#FFF2CC] text-xs font-bold shadow-2xs">
+                            <span className="px-3 py-2 bg-[#FFE599] border-r border-gray-300 font-extrabold text-gray-800">
+                                MAPPING CORRELATION
+                            </span>
+                            <span className="px-3 py-2 border-r border-gray-300">LOW: <strong className="text-indigo-800">1</strong></span>
+                            <span className="px-3 py-2 border-r border-gray-300">MED: <strong className="text-indigo-800">2</strong></span>
+                            <span className="px-3 py-2 border-r border-gray-300">HIGH: <strong className="text-indigo-800">3</strong></span>
+                            <span className="px-3 py-2">NO: <strong className="text-gray-500">—</strong></span>
+                        </div>
+
+                        <p className="text-xs text-gray-400 italic">
+                            * Levels automatically derived from the Performance Indicators (PIs) Checklist under relative grading rubrics.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* ───────────────────────────────────────────────────────────── */}
+            {/* VIEW 2: CO-PO WITH PI CHECKLIST (Live Editor)                 */}
+            {/* ───────────────────────────────────────────────────────────── */}
+            {activeView === "pi_checklist" && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    <div className="bg-indigo-50/70 border border-indigo-100 p-4 rounded-2xl flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <Sparkles className="w-5 h-5 text-indigo-600 shrink-0" />
+                            <div>
+                                <p className="text-xs font-bold text-indigo-900">Interactive Performance Indicators (PI) Matrix</p>
+                                <p className="text-[11px] text-indigo-700">Check/toggle &quot;Yes&quot; for each Course Outcome. The counts, percentages, and Level 1–3 grading update instantly.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {poDefs.map(poDef => {
+                        const pis = pisByPO[poDef.id] || [];
+                        if (pis.length === 0) return null;
+
+                        const attRow = poAttainment.find(r => r.poId === String(poDef.id));
 
                         return (
-                            <div key={po} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                            <div key={poDef.id} className="bg-white rounded-2xl border border-gray-200/90 shadow-xs overflow-hidden">
                                 {/* PO Header */}
-                                <button
-                                    onClick={() => setExpandedPO(isOpen ? null : po)}
-                                    className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className="w-8 h-8 rounded-lg bg-indigo-600 text-white text-sm font-bold flex items-center justify-center">
-                                            {po}
-                                        </span>
-                                        <div className="text-left">
-                                            <div className="font-semibold text-gray-900 text-sm">PO{po} — {competency}</div>
-                                            <div className="text-xs text-gray-400">{pisInPO.length} Programme Indicators</div>
-                                        </div>
+                                <div className="px-6 py-3.5 bg-gradient-to-r from-gray-900 to-indigo-950 text-white flex flex-wrap items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="px-2.5 py-0.5 rounded-md bg-indigo-500 text-white font-black text-xs">{poDef.code}</span>
+                                        <h4 className="font-bold text-sm text-white">{poDef.title}</h4>
+                                        <span className="text-xs text-indigo-300 font-medium">({poDef.attribute})</span>
                                     </div>
-                                    {isOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                                </button>
+                                    <span className="text-xs text-indigo-200 font-medium">{pis.length} Indicators</span>
+                                </div>
 
-                                {/* PI rows */}
-                                {isOpen && (
-                                    <div className="overflow-x-auto border-t border-gray-100">
-                                        <table className="w-full text-sm min-w-[700px]">
-                                            <thead>
-                                                <tr className="bg-gray-50 border-b border-gray-100">
-                                                    <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-24">PI ID</th>
-                                                    <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Descriptor</th>
-                                                    {CO_KEYS.map(co => (
-                                                        <th key={co} className="p-3 text-xs font-bold text-indigo-600 uppercase tracking-wider w-12 text-center">
-                                                            {CO_LABELS[co]}
-                                                        </th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {pisInPO.map((pi, idx) => (
-                                                    <tr key={pi.id} className={cn(
-                                                        "border-b border-gray-50 hover:bg-gray-50/50 transition-colors",
-                                                        idx % 2 === 1 && "bg-gray-50/30"
-                                                    )}>
-                                                        <td className="p-3 font-mono text-xs text-indigo-600 font-medium border-r border-gray-100">
-                                                            {pi.id}
-                                                        </td>
-                                                        <td className="p-3 text-xs text-gray-600 border-r border-gray-100 max-w-xs leading-relaxed">
-                                                            {pi.descriptor}
-                                                        </td>
-                                                        {CO_KEYS.map(co => (
-                                                            <MappingCellUI
-                                                                key={co}
-                                                                cell={matrix[co]?.[pi.id] ?? { value: null, confidence: 0, matchedWords: [], overridden: false }}
-                                                                onClick={() => handleToggle(co, pi.id)}
-                                                                onHover={() => handleHoverCell(co, pi.id)}
-                                                                onAcceptAI={(lvl) => handleAcceptAI(co, pi.id, lvl)}
-                                                            />
-                                                        ))}
-                                                    </tr>
+                                {/* Table */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-gray-50 text-gray-600 text-[11px] uppercase tracking-wider border-b border-gray-200 font-bold">
+                                                <th className="p-3 w-1/4">Competency</th>
+                                                <th className="p-3 w-5/12">Performance Indicator (PI)</th>
+                                                {CO_KEYS.map((co) => (
+                                                    <th key={co} className="p-2.5 text-center uppercase font-black text-indigo-700">
+                                                        {co}
+                                                    </th>
                                                 ))}
-                                                {/* FINAL AVG ROW FOR PO */}
-                                                <tr className="bg-indigo-50/50 border-t-2 border-indigo-100">
-                                                    <td colSpan={2} className="p-3 text-right text-xs font-bold text-indigo-800 uppercase tracking-wider border-r border-indigo-100">
-                                                        PO Average
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {pis.map((pi) => (
+                                                <tr key={pi.id} className="hover:bg-indigo-50/30 transition-colors">
+                                                    <td className="p-3 text-gray-700 font-medium align-top">
+                                                        {pi.competency || "—"}
                                                     </td>
-                                                    {CO_KEYS.map(co => {
-                                                        let sum = 0;
-                                                        let count = 0;
-                                                        for (const pi of pisInPO) {
-                                                            const cell = matrix[co]?.[pi.id];
-                                                            if (cell && cell.value !== null) {
-                                                                sum += cell.value;
-                                                                count++;
-                                                            }
-                                                        }
-                                                        const avg = count > 0 ? (sum / count).toFixed(2) : "-";
+                                                    <td className="p-3 text-gray-900 font-semibold align-top">
+                                                        <span className="font-mono font-bold text-indigo-600 mr-1.5">{pi.id}</span>
+                                                        <span>{pi.descriptor}</span>
+                                                    </td>
+                                                    {CO_KEYS.map((co) => {
+                                                        const isChecked = !!piSelections[co]?.[pi.id];
+
                                                         return (
-                                                            <td key={co} className="p-3 text-center text-xs font-bold text-indigo-800 bg-indigo-50/80 border-l border-indigo-100 shadow-sm">
-                                                                {avg}
+                                                            <td key={co} className="p-2 text-center align-middle">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleTogglePI(co, pi.id)}
+                                                                    className={cn(
+                                                                        "w-10 h-7 rounded-md text-[11px] font-black transition-all cursor-pointer shadow-2xs select-none",
+                                                                        isChecked
+                                                                            ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                                                                            : "bg-gray-100 text-gray-300 hover:bg-gray-200 hover:text-gray-500"
+                                                                    )}
+                                                                    title={`Click to toggle ${co.toUpperCase()}`}
+                                                                >
+                                                                    {isChecked ? "Yes" : "—"}
+                                                                </button>
                                                             </td>
                                                         );
                                                     })}
                                                 </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
+                                            ))}
+
+                                            {/* Summary Rows for this PO */}
+                                            {/* 1. Count */}
+                                            <tr className="bg-gray-50/80 font-bold border-t-2 border-gray-200 text-gray-700">
+                                                <td className="p-2.5 font-bold">Total PIs: {pis.length}</td>
+                                                <td className="p-2.5 font-bold text-indigo-900">counting the Number of PI attained</td>
+                                                {CO_KEYS.map((co) => (
+                                                    <td key={co} className="p-2.5 text-center font-black text-gray-900">
+                                                        {attRow?.counts?.[co] ?? 0}
+                                                    </td>
+                                                ))}
+                                            </tr>
+
+                                            {/* 2. % Attained */}
+                                            <tr className="bg-gray-50/80 font-bold text-gray-700">
+                                                <td className="p-2.5"></td>
+                                                <td className="p-2.5 font-bold text-indigo-900">% of PI attained</td>
+                                                {CO_KEYS.map((co) => (
+                                                    <td key={co} className="p-2.5 text-center font-bold text-gray-700">
+                                                        {attRow?.percentages?.[co] ? `${attRow.percentages[co]}%` : "0%"}
+                                                    </td>
+                                                ))}
+                                            </tr>
+
+                                            {/* 3. Level */}
+                                            <tr className="bg-[#D9EAD3] font-black text-gray-900 text-sm">
+                                                <td colSpan={2} className="p-2.5 font-black text-left">
+                                                    Level 1: % &le; 59% &nbsp;|&nbsp; Level 2: 60% &le; % &le; 70% &nbsp;|&nbsp; Level 3: % &ge; 71%
+                                                </td>
+                                                {CO_KEYS.map((co) => {
+                                                    const lvl = attRow?.levels?.[co];
+                                                    return (
+                                                        <td key={co} className="p-2 text-center">
+                                                            {lvl !== null && lvl !== undefined ? (
+                                                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-white border border-emerald-400 text-emerald-900 font-black shadow-2xs">
+                                                                    {lvl}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-gray-400 font-normal">—</span>
+                                                            )}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         );
                     })}
                 </div>
             )}
 
-            {/* ── PO Attainment Summary ─────────────────────────── */}
-            {poAttainment.length > 0 && (
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 overflow-x-auto mt-6">
-                    <h2 className="font-bold text-gray-900 mb-4">Final PO Attainment Summary</h2>
-                    <table className="w-full border-collapse text-sm text-center">
-                        <thead className="bg-gray-100 border-b border-gray-200">
-                            <tr>
-                                <th className="border-r border-gray-200 px-4 py-3 font-semibold text-gray-700 whitespace-nowrap bg-gray-200">
-                                    CO / PO
-                                </th>
-                                {poAttainment.map(row => (
-                                    <th key={row.poId} className="border-r border-gray-200 px-4 py-3 font-semibold text-gray-700 whitespace-nowrap">
-                                        {Number(row.poId) > 12 ? `PSO${Number(row.poId) - 12}` : `PO${row.poId}`}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {CO_KEYS.map((co) => (
-                                <tr key={co} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <td className="border-r border-gray-200 px-4 py-2 font-bold text-gray-600 bg-gray-50">
-                                        {co.toUpperCase()}
-                                    </td>
-                                    {poAttainment.map((row) => {
-                                        const val = row.coMap?.[co];
-                                        return (
-                                            <td key={`${row.poId}-${co}`} className={cn(
-                                                "border-r border-gray-200 px-4 py-2 font-medium text-base",
-                                                val === 3 ? "text-emerald-600 bg-emerald-50/20" :
-                                                val === 2 ? "text-yellow-600 bg-yellow-50/20" :
-                                                val === 1 ? "text-orange-600 bg-orange-50/20" :
-                                                "text-gray-400"
-                                            )}>
-                                                {val !== null && val !== undefined ? val : "-"}
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-                            ))}
-
-                            <tr className="border-t-2 border-gray-300">
-                                <td className="border-r border-gray-300 px-4 py-4 font-bold text-indigo-900 bg-indigo-50/80">
-                                    FINAL AVG
-                                </td>
-                                {poAttainment.map(row => (
-                                    <td key={`avg-${row.poId}`} className={cn(
-                                        "border-r border-gray-300 px-4 py-4 font-bold text-lg",
-                                        row.level && row.level >= 2.5 ? "text-emerald-700 bg-emerald-100/50" :
-                                        row.level && row.level >= 1.5 ? "text-yellow-700 bg-yellow-100/50" :
-                                        row.level && row.level > 0 ? "text-orange-700 bg-orange-100/50" :
-                                        row.level === 0 ? "text-red-600 bg-red-100/50" :
-                                        "text-gray-400 bg-gray-50/50"
-                                    )}>
-                                        {row.level !== null ? row.level : "-"}
-                                    </td>
-                                ))}
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <div className="mt-4 text-xs text-gray-600 flex gap-4 font-medium">
-                        <p><span className="inline-block w-3 h-3 rounded-full bg-emerald-500 mr-1"></span> Level 3 (Strong)</p>
-                        <p><span className="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-1"></span> Level 2 (Moderate)</p>
-                        <p><span className="inline-block w-3 h-3 rounded-full bg-orange-500 mr-1"></span> Level 1 (Slight)</p>
-                        <p><span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-1"></span> Level 0 (Fail)</p>
+            {/* ───────────────────────────────────────────────────────────── */}
+            {/* VIEW 3: PO & PSO MASTER STATEMENTS (Config & View)           */}
+            {/* ───────────────────────────────────────────────────────────── */}
+            {activeView === "po_config" && (
+                <div className="bg-white rounded-2xl border border-gray-200/90 p-6 shadow-sm space-y-6 animate-in fade-in duration-300">
+                    <div className="border-b border-gray-100 pb-4">
+                        <h3 className="font-bold text-gray-900 text-base">Program Outcomes (POs) & Program Specific Outcomes (PSOs)</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Official AICTE / Department Graduate Attributes & Statements</p>
                     </div>
-                </div>
-            )}
 
-            {/* ── Empty State ─────────────────────────────────────── */}
-            {!matrix && !running && (
-                <div className="text-center py-20 text-gray-400">
-                    <Brain className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <p className="font-medium">Fill in CO descriptions above and click <span className="text-indigo-600 font-bold">Run NLP Mapping</span> to generate the matrix</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {poDefs.map(poDef => (
+                            <div key={poDef.id} className="p-4 rounded-xl border border-gray-200/80 bg-gray-50/50 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-2 py-0.5 rounded-md bg-indigo-600 text-white font-black text-xs font-mono">{poDef.code}</span>
+                                        <span className="font-bold text-gray-900 text-xs">{poDef.title}</span>
+                                    </div>
+                                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                                        {poDef.attribute}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-600 leading-relaxed">{poDef.description}</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>

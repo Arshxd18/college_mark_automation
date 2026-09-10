@@ -3,6 +3,7 @@
 import React from "react";
 import { ExamConfig, QuestionConfig, COLabel } from "@/types";
 import { sortQuestionKeys } from "@/lib/calculations";
+import { DEFAULT_PO_DEFINITIONS } from "@/lib/poData";
 import { ChevronDown, ChevronUp, Settings, Upload, CloudUpload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
 const CO_OPTIONS: COLabel[] = ["co1", "co2", "co3", "co4", "co5", "co6"];
@@ -207,6 +208,34 @@ export default function SetupSection({
                                         value={coDescriptions[co] || ""}
                                         onChange={(e) => setCoDescriptions(prev => ({ ...prev, [co]: e.target.value }))}
                                     />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="border-t border-gray-100 my-6"></div>
+
+                    {/* Program Outcomes (POs & PSOs) Reference & Statements */}
+                    <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-md font-semibold text-gray-900">Program Outcomes (POs & PSOs) Master Statements</h3>
+                            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                                14 Outcomes Registered
+                            </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-4">Official graduate attributes and program-specific outcomes for AICTE R23 accreditation.</p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1">
+                            {DEFAULT_PO_DEFINITIONS.map(po => (
+                                <div key={po.id} className="p-3 bg-gray-50 rounded-xl border border-gray-200/80 text-xs space-y-1">
+                                    <div className="flex items-center justify-between font-bold">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="px-2 py-0.5 rounded bg-indigo-600 text-white font-mono text-[10px]">{po.code}</span>
+                                            <span className="text-gray-900">{po.title}</span>
+                                        </div>
+                                        <span className="text-[10px] text-indigo-700 bg-indigo-100/60 px-1.5 py-0.5 rounded">{po.attribute}</span>
+                                    </div>
+                                    <p className="text-gray-600 leading-relaxed text-[11px]">{po.description}</p>
                                 </div>
                             ))}
                         </div>
