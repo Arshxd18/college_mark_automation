@@ -87,8 +87,8 @@ export default function COAnalysis({ students, questionConfig, testType = "Inter
     }, [questionConfig, isUT]);
 
     const { attainment } = useMemo(() => {
-        return computeAssessmentCO(students, questionConfig, testType);
-    }, [students, questionConfig, testType]);
+        return computeAssessmentCO(students, questionConfig, testType, thresholds);
+    }, [students, questionConfig, testType, thresholds]);
 
     // Weighted label for column header
     const pctLabel = isWeighted
