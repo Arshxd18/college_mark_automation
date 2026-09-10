@@ -14,6 +14,8 @@ import { parseExcelUpload } from "@/lib/excel-parser";
 import Header from "./Header";
 import Footer from "./Footer";
 
+import { downloadAssessmentReport } from "@/lib/excelReportGenerator";
+
 type SaveStatus = "idle" | "saving" | "success" | "error";
 
 export default function Dashboard() {
@@ -27,6 +29,7 @@ export default function Dashboard() {
     const [coDescriptions, setCoDescriptions] = useState<Record<COLabel, string>>({
         co1: "", co2: "", co3: "", co4: "", co5: "", co6: ""
     });
+    const [exporting, setExporting] = useState(false);
 
     const [examConfig, setExamConfig] = useState<ExamConfig>({
         academicYear: "2025-2026",
@@ -100,28 +103,18 @@ export default function Dashboard() {
     };
 
     const handleExport = async () => {
+        if (students.length === 0) {
+            alert("No student data to export. Please enter marks or upload a file first.");
+            return;
+        }
+        setExporting(true);
         try {
-            const response = await fetch('/api/export', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ students, examConfig, questionConfig }),
-            });
-
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `CO_Analysis_${examConfig.academicYear}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-            } else {
-                alert('Failed to export Excel');
-            }
+            await downloadAssessmentReport(students, examConfig, questionConfig);
         } catch (e) {
-            console.error(e);
-            alert('Error exporting Excel');
+            console.error("Export error:", e);
+            alert("Failed to export Excel report.");
+        } finally {
+            setExporting(false);
         }
     };
 
@@ -289,10 +282,11 @@ export default function Dashboard() {
                         {/* Export Excel */}
                         <button
                             onClick={handleExport}
-                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg shadow-sm text-sm font-semibold transition-all hover:-translate-y-0.5"
+                            disabled={exporting}
+                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white px-4 py-2 rounded-lg shadow-sm text-sm font-semibold transition-all hover:-translate-y-0.5"
                         >
-                            <Download className="w-4 h-4" />
-                            Export
+                            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            {exporting ? "Exporting..." : "Export"}
                         </button>
                     </div>
 
@@ -302,8 +296,8 @@ export default function Dashboard() {
                             className={`p-2 ${saveButtonClass} text-white rounded-lg`}>
                             <CloudUpload className="w-5 h-5" />
                         </button>
-                        <button onClick={handleExport} className="p-2 text-emerald-600 bg-emerald-50 rounded-lg">
-                            <Download className="w-5 h-5" />
+                        <button onClick={handleExport} disabled={exporting} className="p-2 text-emerald-600 bg-emerald-50 rounded-lg">
+                            {exporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
                         </button>
                         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                             className="p-2 text-gray-600 bg-gray-100 rounded-lg">
