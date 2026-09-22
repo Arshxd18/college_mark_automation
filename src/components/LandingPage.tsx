@@ -88,7 +88,7 @@ export default function LandingPage() {
                                     className="text-xs sm:text-sm font-semibold tracking-wide"
                                 />
                                 <p className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">
-                                    Dept of AI &amp; DS • NBA / AICTE R23 Suite
+                                    Dept of AI &amp; DS • NBA / AICTE R23 
                                 </p>
                             </div>
                         </div>

@@ -72,9 +72,7 @@ export default function SetupSection({
                 className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
             >
                 <div className="flex items-center gap-2">
-                    <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
-                        <Settings className="w-5 h-5" />
-                    </div>
+                   
                     <div className="text-left">
                         <h2 className="text-lg font-semibold text-gray-900">Assessment Setup</h2>
                         <p className="text-xs text-gray-500">Configure exam details and CO mappings</p>
@@ -182,7 +180,7 @@ export default function SetupSection({
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <h3 className="text-md font-bold text-gray-900 flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                                 
                                     Attainment Rubrics & Dynamic Level Thresholds
                                 </h3>
                                 <p className="text-xs text-gray-500 mt-0.5">

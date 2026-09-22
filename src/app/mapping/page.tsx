@@ -56,9 +56,7 @@ function MappingPageInner() {
 
                 {/* ── Page heading ─────────────────────────────── */}
                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-violet-100 rounded-2xl">
-                        <Network className="w-7 h-7 text-violet-700" />
-                    </div>
+                   
                     <div>
                         <h1 className="text-2xl font-extrabold text-gray-900">CO–PO–PSO Mapping</h1>
                         <p className="text-sm text-gray-500 mt-0.5">

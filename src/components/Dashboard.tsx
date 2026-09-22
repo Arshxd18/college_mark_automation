@@ -253,9 +253,7 @@ export default function Dashboard() {
             <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-20 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-indigo-100 text-indigo-600 rounded-md">
-                            <Calculator className="w-5 h-5" />
-                        </div>
+                        
                         <span className="font-bold text-gray-700 text-sm hidden sm:inline">CO Automation System</span>
                     </div>
 
