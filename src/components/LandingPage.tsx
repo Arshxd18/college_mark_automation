@@ -13,7 +13,8 @@ import {
     FileSpreadsheet,
     ShieldCheck,
     Network,
-    TrendingUp
+    TrendingUp,
+    Github
 } from "lucide-react";
 import { LightTunnel, StrokeText } from "@/components/3d";
 
@@ -348,13 +349,25 @@ export default function LandingPage() {
                 </main>
 
                 {/* ── Footer ────────────────────────────────────────────────── */}
-                <footer className="border-t border-white/[0.06] bg-[#090D16]/90 backdrop-blur-xl py-6 px-4 sm:px-8 text-center text-xs text-slate-500 space-y-2">
+                <footer className="border-t border-white/[0.06] bg-[#090D16]/90 backdrop-blur-xl py-6 px-4 sm:px-8 text-center text-xs text-slate-500 space-y-3">
                     <div className="flex flex-wrap items-center justify-center gap-6 text-slate-400">
                         <Link href="/dashboard" className="hover:text-slate-200 transition-colors">Assessment Dashboard</Link>
                     </div>
-                    <p className="text-[11px]">
+                    <p className="text-[11px] text-slate-400">
                         &copy; {new Date().getFullYear()} Panimalar Engineering College &bull; Department of Artificial Intelligence and Data Science.
                     </p>
+                    <div className="pt-1 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+                        <span>Developed by</span>
+                        <a
+                            href="https://github.com/Arshxd18"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] hover:border-indigo-500/30 text-slate-300 hover:text-white transition-all font-medium"
+                        >
+                            <Github className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>Mohamed Arshad</span>
+                        </a>
+                    </div>
                 </footer>
             </div>
         </div>
