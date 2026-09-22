@@ -2,13 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
     LayoutDashboard, 
     Layers, 
     ArrowRight, 
-    Play, 
-    Zap,
-    GraduationCap,
     CheckCircle2,
     FileSpreadsheet,
     ShieldCheck,
@@ -16,9 +14,10 @@ import {
     TrendingUp,
     Github
 } from "lucide-react";
-import { LightTunnel, StrokeText } from "@/components/3d";
+import { LightTunnel, StrokeText, ShinyText, FuseButton } from "@/components/3d";
 
 export default function LandingPage() {
+    const router = useRouter();
     const [simScore, setSimScore] = useState<number>(76);
     const [simType, setSimType] = useState<"IA" | "UT" | "AS">("UT");
     const [mounted, setMounted] = useState(false);
@@ -72,36 +71,44 @@ export default function LandingPage() {
                 {/* ── Top Navigation Bar ────────────────────────────────────── */}
                 <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#090D16]/80 border-b border-white/[0.06] px-4 sm:px-8 py-3.5 transition-all">
                     <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-                        {/* Institutional Logo & Title */}
+                        {/* Institutional Logo & Title (Logo box removed) */}
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/10 p-1 backdrop-blur-md flex items-center justify-center shadow-sm">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src="/clg_logo.png"
-                                    alt="College Logo"
-                                    className="w-full h-full object-contain filter drop-shadow opacity-90"
-                                />
-                            </div>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src="/clg_logo.png"
+                                alt="College Logo"
+                                className="w-10 h-10 object-contain filter drop-shadow opacity-95"
+                            />
                             <div>
-                                <h1 className="text-xs sm:text-sm font-semibold tracking-wide text-slate-100">
-                                    Panimalar Engineering College
-                                </h1>
+                                <ShinyText
+                                    text="Panimalar Engineering College"
+                                    color="#E2E8F0"
+                                    shineColor="#818CF8"
+                                    speed={3}
+                                    className="text-xs sm:text-sm font-semibold tracking-wide"
+                                />
                                 <p className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">
                                     Dept of AI &amp; DS • NBA / AICTE R23 Suite
                                 </p>
                             </div>
                         </div>
 
-                        {/* Top Action - Direct to Dashboard */}
+                        {/* Top Action - FuseButton to Dashboard */}
                         <div className="flex items-center gap-3">
-                            <Link
-                                href="/dashboard"
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600/90 hover:bg-indigo-600 text-white text-xs sm:text-sm font-semibold shadow-sm border border-indigo-400/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                            >
-                                <LayoutDashboard className="w-4 h-4 text-indigo-200" />
-                                <span>Go to Dashboard</span>
-                                <ArrowRight className="w-3.5 h-3.5 text-indigo-200" />
-                            </Link>
+                            <FuseButton
+                                label="Go to Dashboard"
+                                doneLabel="Opening..."
+                                undoLabel="Cancel"
+                                icon={<LayoutDashboard size={14} className="text-indigo-200" />}
+                                size="sm"
+                                color="#F8FAFC"
+                                background="#4F46E5"
+                                fuseColor="#818CF8"
+                                radius={12}
+                                undoWindow={1500}
+                                onCommit={() => router.push('/dashboard')}
+                                onFuseEnd={() => router.push('/dashboard')}
+                            />
                         </div>
                     </div>
                 </header>
@@ -111,10 +118,6 @@ export default function LandingPage() {
 
                     {/* Hero Header */}
                     <div className="text-center space-y-5 max-w-3xl mx-auto pt-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-medium text-slate-300 shadow-sm">
-                            <GraduationCap className="w-3.5 h-3.5 text-indigo-400" />
-                            <span>Accreditation &amp; Outcome-Based Assessment Suite</span>
-                        </div>
 
                         {/* Animated Stroke Text Headline */}
                         <div className="py-2">
@@ -143,16 +146,22 @@ export default function LandingPage() {
                             Continuous assessment calculations, relative rubric mapping, 96 Performance Indicator matrix, and NBA audit-ready multi-sheet Excel generation.
                         </p>
 
-                        {/* Primary Dashboard CTA */}
+                        {/* Primary Dashboard CTA with FuseButton */}
                         <div className="flex items-center justify-center pt-3">
-                            <Link
-                                href="/dashboard"
-                                className="inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm sm:text-base shadow-lg shadow-indigo-950/40 border border-indigo-400/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                            >
-                                <Play className="w-4 h-4 fill-white" />
-                                <span>Open Assessment Dashboard</span>
-                                <ArrowRight className="w-4 h-4" />
-                            </Link>
+                            <FuseButton
+                                label="Open Assessment Dashboard"
+                                doneLabel="Opening..."
+                                undoLabel="Cancel"
+                                icon={<ArrowRight size={16} />}
+                                size="lg"
+                                color="#F8FAFC"
+                                background="#4F46E5"
+                                fuseColor="#818CF8"
+                                radius={16}
+                                undoWindow={2000}
+                                onCommit={() => router.push('/dashboard')}
+                                onFuseEnd={() => router.push('/dashboard')}
+                            />
                         </div>
                     </div>
 
@@ -251,10 +260,13 @@ export default function LandingPage() {
                     <div className="p-6 sm:p-7 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl shadow-sm space-y-5">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-base sm:text-lg font-semibold text-slate-100 flex items-center gap-2">
-                                    <Zap className="w-4 h-4 text-indigo-400" />
-                                    <span>NBA Attainment Level Guide &amp; Formula</span>
-                                </h3>
+                                <ShinyText
+                                    text="NBA Attainment Level Guide & Formula"
+                                    color="#F1F5F9"
+                                    shineColor="#818CF8"
+                                    speed={2.8}
+                                    className="text-base sm:text-lg font-semibold"
+                                />
                                 <p className="text-xs text-slate-400 mt-0.5">
                                     Adjust target percentages to verify NBA level attainment and calculation weighting.
                                 </p>
@@ -350,9 +362,6 @@ export default function LandingPage() {
 
                 {/* ── Footer ────────────────────────────────────────────────── */}
                 <footer className="border-t border-white/[0.06] bg-[#090D16]/90 backdrop-blur-xl py-6 px-4 sm:px-8 text-center text-xs text-slate-500 space-y-3">
-                    <div className="flex flex-wrap items-center justify-center gap-6 text-slate-400">
-                        <Link href="/dashboard" className="hover:text-slate-200 transition-colors">Assessment Dashboard</Link>
-                    </div>
                     <p className="text-[11px] text-slate-400">
                         &copy; {new Date().getFullYear()} Panimalar Engineering College &bull; Department of Artificial Intelligence and Data Science.
                     </p>
@@ -362,10 +371,16 @@ export default function LandingPage() {
                             href="https://github.com/Arshxd18"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] hover:border-indigo-500/30 text-slate-300 hover:text-white transition-all font-medium"
+                            className="inline-flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors"
                         >
                             <Github className="w-3.5 h-3.5 text-indigo-400" />
-                            <span>Mohamed Arshad</span>
+                            <ShinyText
+                                text="Mohamed Arshad"
+                                color="#CBD5E1"
+                                shineColor="#818CF8"
+                                speed={2.5}
+                                className="font-medium hover:underline"
+                            />
                         </a>
                     </div>
                 </footer>
@@ -373,4 +388,5 @@ export default function LandingPage() {
         </div>
     );
 }
+
 
