@@ -93,20 +93,21 @@ export default function LandingPage() {
                             </div>
                         </div>
 
-                        {/* Top Action - FuseButton to Dashboard */}
+                        {/* Top Action - FuseButton to Dashboard (Glassmorphism) */}
                         <div className="flex items-center gap-3">
                             <FuseButton
                                 label="Go to Dashboard"
                                 doneLabel="Redirecting..."
                                 undoLabel="Cancel"
-                                icon={<LayoutDashboard size={14} className="text-indigo-200" />}
+                                icon={<LayoutDashboard size={14} className="text-slate-300" />}
                                 size="sm"
                                 color="#F8FAFC"
-                                background="#4F46E5"
-                                fuseColor="#818CF8"
+                                background="rgba(255, 255, 255, 0.05)"
+                                fuseColor="#CBD5E1"
                                 radius={12}
                                 undoWindow={2000}
                                 commitOn="fuseEnd"
+                                className="backdrop-blur-xl border border-white/10 hover:border-white/25 hover:bg-white/[0.09] shadow-sm transition-all"
                                 onFuseEnd={() => router.push('/dashboard')}
                             />
                         </div>
@@ -146,20 +147,21 @@ export default function LandingPage() {
                             Continuous assessment calculations, relative rubric mapping, 96 Performance Indicator matrix, and NBA audit-ready multi-sheet Excel generation.
                         </p>
 
-                        {/* Primary Dashboard CTA with FuseButton */}
+                        {/* Primary Dashboard CTA with FuseButton (Glassmorphism) */}
                         <div className="flex items-center justify-center pt-3">
                             <FuseButton
                                 label="Open Assessment Dashboard"
                                 doneLabel="Redirecting..."
                                 undoLabel="Cancel"
-                                icon={<ArrowRight size={16} />}
+                                icon={<ArrowRight size={16} className="text-slate-200" />}
                                 size="lg"
                                 color="#F8FAFC"
-                                background="#4F46E5"
-                                fuseColor="#818CF8"
+                                background="rgba(255, 255, 255, 0.06)"
+                                fuseColor="#E2E8F0"
                                 radius={16}
                                 undoWindow={2500}
                                 commitOn="fuseEnd"
+                                className="backdrop-blur-2xl border border-white/15 hover:border-white/30 hover:bg-white/[0.1] shadow-lg shadow-black/25 transition-all font-semibold"
                                 onFuseEnd={() => router.push('/dashboard')}
                             />
                         </div>
