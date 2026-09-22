@@ -11,8 +11,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const [authorized, setAuthorized] = useState(false);
 
     useEffect(() => {
-        // Skip check for login page
-        if (pathname === "/login") {
+        // Skip check for login page and landing pages
+        if (pathname === "/login" || pathname === "/" || pathname === "/landing") {
             setAuthorized(true);
             return;
         }

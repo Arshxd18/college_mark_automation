@@ -19,7 +19,7 @@ export default function Header() {
         <header className="glass-header shadow-sm border-b border-white/50 backdrop-blur-xl sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
                 {/* Logo & College Name */}
-                <div className="flex items-center gap-4">
+                <Link href="/" className="flex items-center gap-4 hover:opacity-90 transition-opacity">
                     <div className="flex-shrink-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -36,7 +36,7 @@ export default function Header() {
                             Dept of AI&DS
                         </p>
                     </div>
-                </div>
+                </Link>
 
                 {/* Navigation */}
                 <div className="flex items-center gap-2">
@@ -46,7 +46,7 @@ export default function Header() {
                         className={cn(
                             "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all",
                             pathname === "/attainment"
-                                ? "bg-violet-100 text-violet-700"
+                                ? "bg-violet-100 text-violet-700 font-semibold"
                                 : "text-gray-600 hover:text-violet-600 hover:bg-violet-50"
                         )}
                     >
@@ -60,7 +60,7 @@ export default function Header() {
                         className={cn(
                             "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all",
                             pathname === "/admin"
-                                ? "bg-indigo-100 text-indigo-700"
+                                ? "bg-indigo-100 text-indigo-700 font-semibold"
                                 : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
                         )}
                     >
@@ -74,7 +74,7 @@ export default function Header() {
                         className={cn(
                             "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all",
                             pathname === "/mapping"
-                                ? "bg-violet-100 text-violet-700"
+                                ? "bg-violet-100 text-violet-700 font-semibold"
                                 : "text-gray-600 hover:text-violet-600 hover:bg-violet-50"
                         )}
                     >
@@ -83,20 +83,18 @@ export default function Header() {
                     </Link>
 
                     {/* Dashboard Link */}
-                    {pathname !== "/" && (
-                        <Link
-                            href="/"
-                            className={cn(
-                                "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all",
-                                pathname === "/"
-                                    ? "bg-violet-100 text-violet-700"
-                                    : "text-gray-600 hover:text-violet-600 hover:bg-violet-50"
-                            )}
-                        >
-                            <LayoutDashboard className="w-4 h-4" />
-                            <span className="hidden sm:inline">Dashboard</span>
-                        </Link>
-                    )}
+                    <Link
+                        href="/dashboard"
+                        className={cn(
+                            "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all",
+                            pathname === "/dashboard"
+                                ? "bg-violet-100 text-violet-700 font-semibold"
+                                : "text-gray-600 hover:text-violet-600 hover:bg-violet-50"
+                        )}
+                    >
+                        <LayoutDashboard className="w-4 h-4" />
+                        <span className="hidden sm:inline">Dashboard</span>
+                    </Link>
 
                     {/* Logout Button */}
                     {/* <button
