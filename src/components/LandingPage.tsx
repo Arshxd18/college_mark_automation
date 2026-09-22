@@ -97,7 +97,7 @@ export default function LandingPage() {
                         <div className="flex items-center gap-3">
                             <FuseButton
                                 label="Go to Dashboard"
-                                doneLabel="Opening..."
+                                doneLabel="Redirecting..."
                                 undoLabel="Cancel"
                                 icon={<LayoutDashboard size={14} className="text-indigo-200" />}
                                 size="sm"
@@ -105,22 +105,22 @@ export default function LandingPage() {
                                 background="#4F46E5"
                                 fuseColor="#818CF8"
                                 radius={12}
-                                undoWindow={1500}
-                                onCommit={() => router.push('/dashboard')}
+                                undoWindow={2000}
+                                commitOn="fuseEnd"
                                 onFuseEnd={() => router.push('/dashboard')}
                             />
                         </div>
                     </div>
                 </header>
 
-                {/* ── Main Hero Section ─────────────────────────────────────── */}
-                <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16 w-full">
+                {/* ── Main Container ────────────────────────────────────────── */}
+                <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-20 w-full flex flex-col">
 
-                    {/* Hero Header */}
-                    <div className="text-center space-y-5 max-w-3xl mx-auto pt-4">
+                    {/* Hero Header - Centered vertically & horizontally in the initial viewport */}
+                    <div className="min-h-[calc(100vh-120px)] flex flex-col justify-center items-center text-center space-y-6 max-w-3xl mx-auto py-8">
 
                         {/* Animated Stroke Text Headline */}
-                        <div className="py-2">
+                        <div className="py-2 w-full flex justify-center">
                             {mounted ? (
                                 <StrokeText
                                     text="AUTO ATTAIN R23"
@@ -146,11 +146,11 @@ export default function LandingPage() {
                             Continuous assessment calculations, relative rubric mapping, 96 Performance Indicator matrix, and NBA audit-ready multi-sheet Excel generation.
                         </p>
 
-                        {/* Primary Dashboard CTA with FuseButton */}
-                        <div className="flex items-center justify-center pt-3">
+                        {/* Primary Dashboard CTA with Late Fuse Redirection */}
+                        <div className="flex items-center justify-center pt-4">
                             <FuseButton
                                 label="Open Assessment Dashboard"
-                                doneLabel="Opening..."
+                                doneLabel="Redirecting to Dashboard..."
                                 undoLabel="Cancel"
                                 icon={<ArrowRight size={16} />}
                                 size="lg"
@@ -158,8 +158,8 @@ export default function LandingPage() {
                                 background="#4F46E5"
                                 fuseColor="#818CF8"
                                 radius={16}
-                                undoWindow={2000}
-                                onCommit={() => router.push('/dashboard')}
+                                undoWindow={2500}
+                                commitOn="fuseEnd"
                                 onFuseEnd={() => router.push('/dashboard')}
                             />
                         </div>
