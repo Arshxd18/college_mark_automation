@@ -49,7 +49,6 @@ export interface ExamConfig {
   section: string;         // e.g. "A", "B"
   facultyName: string;     // e.g. "Dr. A. Kumar"
   thresholds?: AttainmentThresholds;
-  poStatements?: Record<string, string>; // Subject-specific context for PO1..PO12, PSO1..PSO3
   poMatrix?: Partial<Record<COLabel, Record<string, number | null>>>; // CO-PO mapping levels (1, 2, 3 or null)
 }
 
