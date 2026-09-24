@@ -97,41 +97,66 @@ export async function saveAssessment(
     // 1. Compute CO stats
     const computed = computeAssessmentCO(students, questionConfig, testType, examConfig.thresholds);
 
-    // 2. Deactivate previous active assessments with same keys
-    const { error: updateError } = await supabase
-        .from("assessments")
-        .update({ is_active: false })
-        .eq("batch_year", batchYear)
-        .eq("subject_id", subjectId)
-        .eq("test_type", testType)
-        .eq("is_active", true);
+    const docId = `${batchYear}_${subjectId}_${testType}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const assessmentDoc: AssessmentDoc = {
+        id: docId,
+        batchYear,
+        subjectId,
+        testType,
+        isActive: true,
+        examConfig,
+        questionConfig,
+        students,
+        computed,
+        savedAt: new Date().toISOString(),
+    };
 
-    if (updateError) {
-        throw new Error(`Failed to deactivate older assessments: ${updateError.message}`);
+    // 1. Always cache to LocalStorage first
+    setLocalItem(`assessment_${docId}`, assessmentDoc);
+
+    const localBatches = getLocalItem<string[]>("local_batch_years", []);
+    if (!localBatches.includes(batchYear)) {
+        setLocalItem("local_batch_years", [...localBatches, batchYear]);
+    }
+    const localSubs = getLocalItem<string[]>(`local_subjects_${batchYear}`, []);
+    if (!localSubs.includes(subjectId)) {
+        setLocalItem(`local_subjects_${batchYear}`, [...localSubs, subjectId]);
     }
 
-    // 3. Insert new active assessment
-    const { data, error: insertError } = await supabase
-        .from("assessments")
-        .insert({
-            batch_year: batchYear,
-            subject_id: subjectId,
-            test_type: testType,
-            is_active: true,
-            exam_config: examConfig,
-            question_config: questionConfig,
-            students: students,
-            computed: computed,
-            saved_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+    // 2. Sync to Supabase in background
+    try {
+        await supabase
+            .from("assessments")
+            .update({ is_active: false })
+            .eq("batch_year", batchYear)
+            .eq("subject_id", subjectId)
+            .eq("test_type", testType)
+            .eq("is_active", true);
 
-    if (insertError) {
-        throw new Error(`Failed to insert assessment: ${insertError.message}`);
+        const { data, error: insertError } = await supabase
+            .from("assessments")
+            .insert({
+                batch_year: batchYear,
+                subject_id: subjectId,
+                test_type: testType,
+                is_active: true,
+                exam_config: examConfig,
+                question_config: questionConfig,
+                students: students,
+                computed: computed,
+                saved_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+        if (!insertError && data?.id) {
+            return data.id;
+        }
+    } catch (err: any) {
+        console.warn("Supabase saveAssessment failed, stored locally:", err?.message || err);
     }
 
-    return data.id;
+    return docId;
 }
 
 // ── Query Assessments ─────────────────────────────────────────────────────────
@@ -140,22 +165,39 @@ export async function getAssessmentsForBatch(
     batchYear: string,
     subjectId?: string
 ): Promise<AssessmentDoc[]> {
-    let query = supabase
-        .from("assessments")
-        .select("*")
-        .eq("batch_year", batchYear)
-        .eq("is_active", true);
+    let remoteDocs: AssessmentDoc[] = [];
+    try {
+        let query = supabase
+            .from("assessments")
+            .select("*")
+            .eq("batch_year", batchYear)
+            .eq("is_active", true);
 
+        if (subjectId) {
+            query = query.eq("subject_id", subjectId);
+        }
+
+        const { data, error } = await query;
+        if (!error && data) {
+            remoteDocs = data.map(mapAssessmentToFrontend);
+        }
+    } catch (err: any) {
+        console.warn("Network error fetching assessments from Supabase:", err?.message || err);
+    }
+
+    if (remoteDocs.length > 0) return remoteDocs;
+
+    // LocalStorage fallback
+    const testTypes = ["Internal 1", "Internal 2", "Semester", "Unit Test", "Assignment"];
+    const localDocs: AssessmentDoc[] = [];
     if (subjectId) {
-        query = query.eq("subject_id", subjectId);
+        for (const tt of testTypes) {
+            const docId = `${batchYear}_${subjectId}_${tt}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+            const doc = getLocalItem<AssessmentDoc | null>(`assessment_${docId}`, null);
+            if (doc) localDocs.push(doc);
+        }
     }
-
-    const { data, error } = await query;
-    if (error) {
-        throw new Error(`Failed to fetch assessments: ${error.message}`);
-    }
-
-    return (data || []).map(mapAssessmentToFrontend);
+    return localDocs;
 }
 
 export async function getAllBatchYears(): Promise<string[]> {
@@ -214,27 +256,50 @@ const resultDocId = (batchYear: string, subjectId: string) =>
 
 export async function saveAttainmentResult(result: AttainmentResult): Promise<void> {
     const id = resultDocId(result.batchYear, result.subjectId);
-    const { error } = await supabase.from("attainment_results").upsert({
-        id: id,
-        batch_year: result.batchYear,
-        subject_id: result.subjectId,
-        co_descriptions: result.coDescriptions,
-        co_attainment_avg: result.coAttainmentAvg,
-        unit_test_level: result.unitTestLevel,
-        assignment_level: result.assignmentLevel,
-        semester_level: result.semesterLevel,
-        internal_attainment: result.internalAttainment,
-        direct_attainment: result.directAttainment,
-        indirect_attainment: result.indirectAttainment,
-        final_attainment: result.finalAttainment,
-        levels: result.levels,
-        computed_at: result.computedAt || new Date().toISOString(),
-        last_updated: new Date().toISOString(),
-    });
+    
+    // Cache locally
+    setLocalItem(`attainment_result_${result.batchYear}_${result.subjectId}`, result);
 
-    if (error) {
-        throw new Error(`Failed to save attainment result: ${error.message}`);
+    try {
+        await supabase.from("attainment_results").upsert({
+            id: id,
+            batch_year: result.batchYear,
+            subject_id: result.subjectId,
+            co_descriptions: result.coDescriptions,
+            co_attainment_avg: result.coAttainmentAvg,
+            unit_test_level: result.unitTestLevel,
+            assignment_level: result.assignmentLevel,
+            semester_level: result.semesterLevel,
+            internal_attainment: result.internalAttainment,
+            direct_attainment: result.directAttainment,
+            indirect_attainment: result.indirectAttainment,
+            final_attainment: result.finalAttainment,
+            levels: result.levels,
+            computed_at: result.computedAt || new Date().toISOString(),
+            last_updated: new Date().toISOString(),
+        });
+    } catch (err: any) {
+        console.warn("Supabase saveAttainmentResult failed, cached locally:", err?.message || err);
     }
+}
+
+// ── Local Storage Fallback Helpers ──────────────────────────────────────────
+
+function getLocalItem<T>(key: string, fallback: T): T {
+    if (typeof window === "undefined") return fallback;
+    try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+function setLocalItem(key: string, value: any): void {
+    if (typeof window === "undefined") return;
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch {}
 }
 
 export async function updateCODescriptions(
@@ -244,23 +309,30 @@ export async function updateCODescriptions(
 ): Promise<void> {
     const id = resultDocId(batchYear, subjectId);
     
-    // First check if a row exists
-    await supabase
-        .from("attainment_results")
-        .select("id")
-        .eq("id", id)
-        .maybeSingle();
+    // 1. Always persist to LocalStorage first (instant & indestructible)
+    setLocalItem(`co_desc_${batchYear}_${subjectId}`, coDescriptions);
+    
+    // Maintain local directory of batches & subjects
+    const localBatches = getLocalItem<string[]>("local_batch_years", []);
+    if (!localBatches.includes(batchYear)) {
+        setLocalItem("local_batch_years", [...localBatches, batchYear]);
+    }
+    const localSubs = getLocalItem<string[]>(`local_subjects_${batchYear}`, []);
+    if (!localSubs.includes(subjectId)) {
+        setLocalItem(`local_subjects_${batchYear}`, [...localSubs, subjectId]);
+    }
 
-    const { error } = await supabase.from("attainment_results").upsert({
-        id: id,
-        batch_year: batchYear,
-        subject_id: subjectId,
-        co_descriptions: coDescriptions,
-        last_updated: new Date().toISOString(),
-    });
-
-    if (error) {
-        throw new Error(`Failed to update CO descriptions: ${error.message}`);
+    // 2. Sync to Supabase in background, catching network errors gracefully
+    try {
+        await supabase.from("attainment_results").upsert({
+            id: id,
+            batch_year: batchYear,
+            subject_id: subjectId,
+            co_descriptions: coDescriptions,
+            last_updated: new Date().toISOString(),
+        });
+    } catch (err: any) {
+        console.warn("Supabase network sync failed, stored locally in browser:", err?.message || err);
     }
 }
 
@@ -268,24 +340,39 @@ export async function getAttainmentResult(
     batchYear: string,
     subjectId: string
 ): Promise<AttainmentResult | null> {
+    const id = resultDocId(batchYear, subjectId);
+    let remoteResult: AttainmentResult | null = null;
+
     try {
-        const id = resultDocId(batchYear, subjectId);
         const { data, error } = await supabase
             .from("attainment_results")
             .select("*")
             .eq("id", id)
             .maybeSingle();
 
-        if (error) {
-            console.warn("Could not fetch attainment result:", error.message);
-            return null;
+        if (!error && data) {
+            remoteResult = mapResultToFrontend(data);
         }
-
-        return data ? mapResultToFrontend(data) : null;
     } catch (err: any) {
         console.warn("Network error fetching attainment result:", err?.message || err);
-        return null;
     }
+
+    // Fallback or merge with LocalStorage if present
+    const localCoDesc = getLocalItem<Record<COLabel, string> | null>(`co_desc_${batchYear}_${subjectId}`, null);
+    const localAttainment = getLocalItem<AttainmentResult | null>(`attainment_result_${batchYear}_${subjectId}`, null);
+
+    if (localCoDesc || localAttainment) {
+        const base = remoteResult || localAttainment || { batchYear, subjectId };
+        return {
+            ...base,
+            coDescriptions: {
+                ...(base.coDescriptions || {}),
+                ...(localCoDesc || {})
+            } as Record<COLabel, string>
+        };
+    }
+
+    return remoteResult;
 }
 
 // ── CO Mapping ────────────────────────────────────────────────────────────────
@@ -296,6 +383,9 @@ const mappingDocId = (batchYear: string, subjectId: string) =>
 export async function saveCOMapping(doc: COMappingDoc): Promise<void> {
     const id = mappingDocId(doc.batchYear, doc.subjectId);
     
+    // 1. Cache to LocalStorage immediately
+    setLocalItem(`co_mapping_${doc.batchYear}_${doc.subjectId}`, doc);
+
     const combinedCoDesc = {
         ...(doc.coDescriptions || {}),
         _piSelections: doc.piSelections || null,
@@ -303,20 +393,20 @@ export async function saveCOMapping(doc: COMappingDoc): Promise<void> {
         _department: doc.department || null,
     };
 
-    const { error } = await supabase.from("mappings").upsert({
-        id: id,
-        batch_year: doc.batchYear,
-        subject_id: doc.subjectId,
-        co_descriptions: combinedCoDesc,
-        matrix: doc.matrix,
-        po_attainment: doc.poAttainment,
-        mapping_locked: doc.mappingLocked || false,
-        is_active: true,
-        saved_at: doc.savedAt || new Date().toISOString(),
-    });
-
-    if (error) {
-        throw new Error(`Failed to save mapping: ${error.message}`);
+    try {
+        await supabase.from("mappings").upsert({
+            id: id,
+            batch_year: doc.batchYear,
+            subject_id: doc.subjectId,
+            co_descriptions: combinedCoDesc,
+            matrix: doc.matrix,
+            po_attainment: doc.poAttainment,
+            mapping_locked: doc.mappingLocked || false,
+            is_active: true,
+            saved_at: doc.savedAt || new Date().toISOString(),
+        });
+    } catch (err: any) {
+        console.warn("Supabase saveCOMapping failed, stored locally:", err?.message || err);
     }
 }
 
@@ -333,16 +423,15 @@ export async function getCOMapping(
             .eq("is_active", true)
             .maybeSingle();
 
-        if (error) {
-            console.warn("Could not fetch mapping:", error.message);
-            return null;
+        if (!error && data) {
+            return mapMappingToFrontend(data);
         }
-
-        return data ? mapMappingToFrontend(data) : null;
     } catch (err: any) {
         console.warn("Network error fetching mapping:", err?.message || err);
-        return null;
     }
+
+    const localDoc = getLocalItem<COMappingDoc | null>(`co_mapping_${batchYear}_${subjectId}`, null);
+    return localDoc;
 }
 
 // ── Admin Analytics Queries ───────────────────────────────────────────────────

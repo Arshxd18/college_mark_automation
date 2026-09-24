@@ -9,6 +9,187 @@ export interface ExtendedPIEntry extends PIEntry {
         co5?: boolean;
         co6?: boolean;
     };
+    /** Brief rationale explaining why this PI maps to the default COs */
+    justification?: string;
+}
+
+export const COMPETENCY_DEFINITIONS: Record<string, string> = {
+    "1.1": "1.1 Demonstrate competence in mathematical modeling",
+    "1.2": "1.2 Demonstrate competence in basic sciences",
+    "1.3": "1.3 Demonstrate competence in engineering fundamentals",
+    "1.4": "1.4 Demonstrate competence in specialized engineering knowledge to the program",
+
+    "2.1": "2.1 Demonstrate an ability to identify and formulate complex engineering problems",
+    "2.2": "2.2 Demonstrate an ability to formulate a solution plan and methodology",
+    "2.3": "2.3 Demonstrate an ability to formulate and interpret a model",
+    "2.4": "2.4 Demonstrate an ability to execute a solution process and analyze results",
+
+    "3.1": "3.1 Demonstrate an ability to define a complex open-ended problem in engineering terms",
+    "3.2": "3.2 Demonstrate an ability to generate a diverse set of alternative design solutions",
+    "3.3": "3.3 Demonstrate an ability to select optimal design scheme for further development",
+    "3.4": "3.4 Demonstrate an ability to advance an engineering design to defined end state",
+
+    "4.1": "4.1 Demonstrate an ability to conduct investigations of technical issues consistent with technical domain",
+    "4.2": "4.2 Demonstrate an ability to design experiments to solve open-ended problems",
+    "4.3": "4.3 Demonstrate an ability to analyze data and reach valid conclusions",
+
+    "5.1": "5.1 Demonstrate an ability to identify/create modern engineering tools, techniques and resources",
+    "5.2": "5.2 Demonstrate an ability to select and apply discipline-specific tools, techniques and resources",
+    "5.3": "5.3 Demonstrate an ability to evaluate the suitability and limitations of tools",
+
+    "6.1": "6.1 Demonstrate an ability to describe the engineering roles in a broader context pertaining to protection of the public and public interest, regulations, and safety",
+    "6.2": "6.2 Demonstrate an understanding of professional engineering regulations, legislation, and standards relevant to the discipline and explain its importance",
+    "6.3": "6.3 Demonstrate an understanding of the impact of engineering and industrial practices on society and environment",
+    "6.4": "6.4 Demonstrate an ability to apply principles of sustainable design and development",
+
+    "7.1": "7.1 Demonstrate an ability to recognize ethical dilemmas",
+    "7.2": "7.2 Demonstrate an ability to apply the Code of Ethics",
+
+    "8.1": "8.1 Demonstrate an ability to form a team and define a role for each member",
+    "8.2": "8.2 Demonstrate effective individual and team operations - communications, problem-solving, conflict resolution and leadership",
+    "8.3": "8.3 Demonstrate success in a team-based project",
+
+    "9.1": "9.1 Demonstrate an ability to comprehend technical literature and document preparation",
+    "9.2": "9.2 Demonstrate competence in listening, speaking, and presentation",
+    "9.3": "9.3 Demonstrate the ability to integrate different modes of communication",
+
+    "10.1": "10.1 Demonstrate an ability to evaluate the economic and financial performance of an engineering activity",
+    "10.2": "10.2 Demonstrate an ability to compare and contrast the costs/benefits of alternate approaches",
+    "10.3": "10.3 Demonstrate an ability to plan/manage an engineering activity within time and budget constraints",
+
+    "11.1": "11.1 Demonstrate an ability to identify gaps in knowledge and a strategy to close these",
+    "11.2": "11.2 Demonstrate an ability to identify changing trends in engineering knowledge and practice",
+    "11.3": "11.3 Demonstrate an ability to identify and access sources for new information",
+
+    "12.1": "12.1 Recognize the need for, and have the preparation and ability to engage in independent and life-long learning",
+
+    "13": "to develop, adapt and apply AI-based/domain-specific processes to enhance efficiency",
+    "14": "to extract hindsight, insight, and foresight from data using analytical and AI-driven methods",
+    "15": "to create, adapt, and apply AI and Data Analytics theories and industrial tools to manage and solve wicked problems",
+};
+
+export function getCompetencyForPI(pi: PIEntry): string {
+    if (pi.competency) return pi.competency;
+    if (pi.poNumber >= 13) {
+        return COMPETENCY_DEFINITIONS[String(pi.poNumber)] || "Domain specific competency";
+    }
+    const parts = pi.id.split(".");
+    if (parts.length >= 2) {
+        const key = `${parts[0]}.${parts[1]}`;
+        if (COMPETENCY_DEFINITIONS[key]) return COMPETENCY_DEFINITIONS[key];
+    }
+    return COMPETENCY_DEFINITIONS[String(pi.poNumber)] || `Competency ${pi.id}`;
+}
+
+/**
+ * Returns a short justification explaining why this PI is mapped to the
+ * course's COs by default. The rationale is derived from the PO domain,
+ * the competency sub-category, and the PI descriptor keywords.
+ */
+export function getJustificationForPI(pi: ExtendedPIEntry): string {
+    if (pi.justification) return pi.justification;
+
+    const desc = pi.descriptor.toLowerCase();
+    const poNum = pi.poNumber;
+    const parts = pi.id.split(".");
+    const compKey = parts.length >= 2 ? `${parts[0]}.${parts[1]}` : "";
+
+    // PSO specific
+    if (poNum >= 13) {
+        if (poNum === 13) return "This course directly develops AI/ML processes applicable to real-world engineering efficiency problems.";
+        if (poNum === 14) return "The subject deals with data analysis and AI-driven insight extraction relevant to business and engineering decision-making.";
+        if (poNum === 15) return "The course applies AI & Data Analytics theories and tools (ML frameworks, analytics pipelines) to address complex societal challenges.";
+    }
+
+    // PO1: Engineering Knowledge
+    if (poNum === 1) {
+        if (desc.includes("discrete") || desc.includes("linear algebra") || desc.includes("statistics")) return "The course requires mathematical foundations (linear algebra, statistics, discrete structures) that directly underpin AI/ML algorithms taught.";
+        if (desc.includes("natural science")) return "Not directly addressed; natural science laws are not a primary focus of this AI/Data Science curriculum.";
+        if (desc.includes("engineering fundamentals")) return "Core CS and engineering fundamentals (algorithms, data structures, systems) are prerequisite knowledge applied throughout the course.";
+        if (desc.includes("computer science") || desc.includes("information technology")) return "The course directly applies CS/IT principles including algorithms, data modeling, and computational thinking to engineering problems.";
+        return "This PI aligns with the foundational knowledge domains required to understand and apply the subject content.";
+    }
+
+    // PO2: Problem Analysis
+    if (poNum === 2) {
+        if (compKey === "2.1") return "The course trains students to clearly define AI/data problems, set objectives (e.g., accuracy targets), and scope the analysis.";
+        if (compKey === "2.2") return "Students learn structured methodologies to decompose complex AI problems and plan solution pipelines (data → model → evaluation).";
+        if (compKey === "2.3") return "Model formulation is central — students build mathematical and statistical models of datasets and system behaviors.";
+        if (compKey === "2.4") return "Students execute solution pipelines, validate model outputs against benchmarks, and interpret error metrics to draw conclusions.";
+        return "Problem analysis skills are exercised when students identify, model, and solve data/AI engineering challenges.";
+    }
+
+    // PO3: Design/Development of Solutions
+    if (poNum === 3) {
+        if (compKey === "3.1") return "Students define requirements for AI systems (input data, output format, performance thresholds) before designing solutions.";
+        if (compKey === "3.2") return "Multiple AI architectures and algorithms are explored, compared, and prototyped to produce diverse candidate solutions.";
+        if (compKey === "3.3") return "Students apply structured evaluation criteria (F1 score, AUC, RMSE) to select the optimal model or design.";
+        if (compKey === "3.4") return "Solutions are refined through hyperparameter tuning, architectural improvements, and iterative testing against constraints.";
+        return "Design skills are applied when engineering end-to-end AI/data pipelines from requirement to deployed solution.";
+    }
+
+    // PO4: Investigation
+    if (poNum === 4) {
+        if (compKey === "4.1") return "Students investigate complex AI/data problems by scoping the question, selecting tools, and collecting/validating data.";
+        if (compKey === "4.2") return "Experimental design (train/test splits, cross-validation, ablation studies) is a core part of the course.";
+        if (compKey === "4.3") return "Students analyze model outputs, interpret confusion matrices, and reach valid conclusions about model performance.";
+        return "Investigation skills are exercised through empirical experiments on datasets and comparative model studies.";
+    }
+
+    // PO5: Modern Tools
+    if (poNum === 5) {
+        if (compKey === "5.1") return "Students identify and learn modern AI/ML tools (TensorFlow, PyTorch, scikit-learn, Pandas) applicable to their domain.";
+        if (compKey === "5.2") return "Domain-specific tools and frameworks are applied hands-on during lab sessions and project work.";
+        if (compKey === "5.3") return "Students critically evaluate tool limitations (scalability, interpretability, latency) when choosing the appropriate framework.";
+        return "Tool proficiency is built through practical exercises using industry-standard AI/data engineering tools.";
+    }
+
+    // PO6: Engineer & Society
+    if (poNum === 6) {
+        if (compKey === "6.1") return "Students understand professional responsibilities in deploying AI systems that affect public safety and welfare.";
+        if (compKey === "6.2") return "Students learn about relevant engineering and data governance regulations (GDPR, IEEE Ethics) that impact AI deployment.";
+        if (compKey === "6.3") return "The societal impact of AI automation and data-driven decisions (bias, fairness, displacement) is examined in the course.";
+        if (compKey === "6.4") return "Sustainable AI principles (energy-efficient models, green computing) are highlighted in the curriculum.";
+        return "The course addresses responsible engineering by situating AI solutions within societal and regulatory contexts.";
+    }
+
+    // PO7: Ethics
+    if (poNum === 7) {
+        return "AI Ethics — including algorithmic bias, data privacy, and fairness — is a key discussion topic woven throughout the course.";
+    }
+
+    // PO8: Individual & Team
+    if (poNum === 8) {
+        if (compKey === "8.1") return "Project work involves forming groups, assigning roles (data engineer, model developer, evaluator), and collaborating effectively.";
+        if (compKey === "8.2") return "Students engage in team-based problem solving, peer reviews, and collaborative code reviews for AI project deliverables.";
+        if (compKey === "8.3") return "End-of-semester team projects demonstrate coordinated execution, integration of individual contributions, and project success.";
+        return "Team collaboration is exercised through group assignments and project-based learning activities.";
+    }
+
+    // PO9: Communication
+    if (poNum === 9) {
+        if (compKey === "9.1") return "Students read research papers, write technical reports, and document AI system designs clearly for academic and professional audiences.";
+        if (compKey === "9.2") return "Oral presentations of project outcomes and demo sessions build speaking and presentation skills.";
+        if (compKey === "9.3") return "Students communicate findings through multiple formats — reports, presentations, code notebooks, and dashboards.";
+        return "Communication skills are developed through documentation, presentations, and written reports of AI project outcomes.";
+    }
+
+    // PO10: Project Mgmt
+    if (poNum === 10) {
+        return "AI project planning — resource estimation, timeline, cost of computation — is discussed in the context of real-world project management.";
+    }
+
+    // PO11: Life-Long Learning
+    if (poNum === 11) {
+        return "AI is a fast-evolving field; the course cultivates habits of self-directed learning, following research trends, and adapting to new frameworks.";
+    }
+
+    // PO12
+    if (poNum === 12) {
+        return "Students are encouraged to engage with emerging AI research, online courses, and self-study to sustain lifelong professional development.";
+    }
+
+    return "This PI is mapped based on alignment between the course learning outcomes and the NBA performance indicator descriptor.";
 }
 
 export const DEFAULT_PI_LIST: ExtendedPIEntry[] = [
