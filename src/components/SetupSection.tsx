@@ -392,29 +392,189 @@ export default function SetupSection({
 
                     <div className="border-t border-gray-100 my-6"></div>
 
-                    {/* Program Outcomes (POs & PSOs) Reference & Statements */}
-                    <div>
-                        <div className="flex justify-between items-center mb-2">
-                            <h3 className="text-md font-semibold text-gray-900">Program Outcomes (POs & PSOs) Master Statements</h3>
-                            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
-                                14 Outcomes Registered
+                    {/* Program Outcomes (POs & PSOs) Subject-Specific Context Input & Reference */}
+                    <div className="space-y-4">
+                        <div className="flex flex-wrap justify-between items-center gap-2">
+                            <div>
+                                <h3 className="text-md font-semibold text-gray-900 flex items-center gap-2">
+                                    <span>Program Outcomes (PO 1–12) &amp; PSOs (1–3) Subject Context Input</span>
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Enter subject-specific topics/statements below. These are compared against the permanent NBA descriptors for AI correlation scoring.
+                                </p>
+                            </div>
+                            <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
+                                15 Outcomes (12 POs + 3 PSOs)
                             </span>
                         </div>
-                        <p className="text-xs text-gray-500 mb-4">Official graduate attributes and program-specific outcomes for AICTE R23 accreditation.</p>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1">
-                            {DEFAULT_PO_DEFINITIONS.map(po => (
-                                <div key={po.id} className="p-3 bg-gray-50 rounded-xl border border-gray-200/80 text-xs space-y-1">
-                                    <div className="flex items-center justify-between font-bold">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="px-2 py-0.5 rounded bg-indigo-600 text-white font-mono text-[10px]">{po.code}</span>
-                                            <span className="text-gray-900">{po.title}</span>
+                        {/* PO/PSO Input Cards Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[420px] overflow-y-auto pr-1 p-1">
+                            {DEFAULT_PO_DEFINITIONS.map(po => {
+                                const currentText = examConfig.poStatements?.[po.code] ?? "";
+                                return (
+                                    <div key={po.id} className="p-3.5 bg-white rounded-xl border border-gray-200 shadow-2xs space-y-2 flex flex-col justify-between">
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5 font-bold">
+                                                    <span className="px-2 py-0.5 rounded bg-indigo-600 text-white font-mono text-[11px] font-black">
+                                                        {po.code}
+                                                    </span>
+                                                    <span className="text-xs text-gray-900 font-semibold">{po.title}</span>
+                                                </div>
+                                                <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                                                    {po.attribute}
+                                                </span>
+                                            </div>
+
+                                            {/* Permanent NBA Benchmark Descriptor */}
+                                            <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/80 text-[11px] text-slate-600 leading-relaxed">
+                                                <span className="font-bold text-slate-700 block text-[10px] uppercase tracking-wider mb-0.5">
+                                                    Permanent NBA Descriptor:
+                                                </span>
+                                                {po.description}
+                                            </div>
                                         </div>
-                                        <span className="text-[10px] text-indigo-700 bg-indigo-100/60 px-1.5 py-0.5 rounded">{po.attribute}</span>
+
+                                        {/* Subject-Specific Context Input */}
+                                        <div className="space-y-1 pt-1">
+                                            <label className="block text-[10px] font-bold text-indigo-900 uppercase">
+                                                Subject Context / Topics Covered:
+                                            </label>
+                                            <textarea
+                                                rows={2}
+                                                value={currentText}
+                                                onChange={(e) => {
+                                                    const updatedStatements = {
+                                                        ...(examConfig.poStatements ?? {}),
+                                                        [po.code]: e.target.value
+                                                    };
+                                                    setExamConfig({
+                                                        ...examConfig,
+                                                        poStatements: updatedStatements
+                                                    });
+                                                }}
+                                                placeholder={`Enter subject curriculum context for ${po.code}...`}
+                                                className="w-full text-xs p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-indigo-50/20"
+                                            />
+                                        </div>
                                     </div>
-                                    <p className="text-gray-600 leading-relaxed text-[11px]">{po.description}</p>
-                                </div>
-                            ))}
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="border-t border-gray-100 my-6"></div>
+
+                    {/* ── Official CO - PO Matrix Table (Matching Attached Format) ── */}
+                    <div className="space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <h3 className="text-md font-semibold text-gray-900">
+                                    CO – PO &amp; PSO Articulation Matrix
+                                </h3>
+                                <p className="text-xs text-gray-500">
+                                    Target correlation levels (3: High, 2: Medium, 1: Low, Blank: No correlation). Click cells to cycle or type levels.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Excel-Styled CO-PO Matrix Container */}
+                        <div className="overflow-x-auto rounded-xl border border-gray-300 shadow-sm bg-white">
+                            <table className="w-full text-center border-collapse text-xs">
+                                <thead>
+                                    {/* Yellow Title Header Banner */}
+                                    <tr>
+                                        <th
+                                            colSpan={DEFAULT_PO_DEFINITIONS.length + 1}
+                                            className="bg-[#FCD34D] text-gray-900 font-extrabold py-2.5 text-sm uppercase tracking-wider border-b border-gray-400"
+                                        >
+                                            CO - PO Matrix
+                                        </th>
+                                    </tr>
+                                    {/* Column Header Row */}
+                                    <tr className="bg-gray-200/90 text-gray-800 font-bold border-b border-gray-300 divide-x divide-gray-300">
+                                        <th className="py-2 px-3 min-w-[90px] bg-gray-300/80 font-black">CO</th>
+                                        {DEFAULT_PO_DEFINITIONS.map((po) => (
+                                            <th key={po.code} className="py-2 px-2 min-w-[46px] font-bold text-gray-800">
+                                                {po.code}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                    {CO_OPTIONS.map((coKey, idx) => {
+                                        // e.g. C101.1 or derived from Subject ID
+                                        const subCode = examConfig.subjectId?.trim() ? examConfig.subjectId.trim() : "C101";
+                                        const rowLabel = `${subCode}.${idx + 1}`;
+
+                                        return (
+                                            <tr key={coKey} className="hover:bg-indigo-50/30 transition-colors divide-x divide-gray-200">
+                                                <td className="py-2 px-3 font-bold text-gray-900 bg-gray-50 text-left font-mono">
+                                                    {rowLabel}
+                                                </td>
+                                                {DEFAULT_PO_DEFINITIONS.map((po) => {
+                                                    const cellVal = examConfig.poMatrix?.[coKey]?.[po.code];
+                                                    const displayVal = cellVal !== null && cellVal !== undefined ? cellVal : "";
+
+                                                    return (
+                                                        <td key={po.code} className="p-0.5">
+                                                            <input
+                                                                type="text"
+                                                                maxLength={1}
+                                                                value={displayVal}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value.trim();
+                                                                    const num = val === "1" ? 1 : val === "2" ? 2 : val === "3" ? 3 : null;
+                                                                    const updatedMatrix = {
+                                                                        ...(examConfig.poMatrix ?? {}),
+                                                                        [coKey]: {
+                                                                            ...(examConfig.poMatrix?.[coKey] ?? {}),
+                                                                            [po.code]: num
+                                                                        }
+                                                                    };
+                                                                    setExamConfig({
+                                                                        ...examConfig,
+                                                                        poMatrix: updatedMatrix
+                                                                    });
+                                                                }}
+                                                                className={`w-full h-8 text-center font-bold text-sm border-0 focus:ring-2 focus:ring-indigo-500 focus:bg-white rounded transition-colors ${
+                                                                    displayVal === 3 ? "text-emerald-700 bg-emerald-50/50" :
+                                                                    displayVal === 2 ? "text-indigo-700 bg-indigo-50/50" :
+                                                                    displayVal === 1 ? "text-amber-700 bg-amber-50/50" :
+                                                                    "text-gray-700 hover:bg-gray-50"
+                                                                }`}
+                                                                placeholder=""
+                                                            />
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        );
+                                    })}
+
+                                    {/* Column Average Summary Row (e.g. C301.AVG) */}
+                                    <tr className="bg-gray-100 font-bold border-t-2 border-gray-300 divide-x divide-gray-300">
+                                        <td className="py-2.5 px-3 text-left font-black text-gray-900 font-mono bg-gray-200">
+                                            {`${examConfig.subjectId?.trim() ? examConfig.subjectId.trim() : "C101"}.AVG`}
+                                        </td>
+                                        {DEFAULT_PO_DEFINITIONS.map((po) => {
+                                            const values = CO_OPTIONS.map((co) => examConfig.poMatrix?.[co]?.[po.code]).filter((v): v is number => typeof v === "number" && v > 0);
+                                            const avg = values.length > 0 ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2) : "";
+
+                                            return (
+                                                <td key={po.code} className="py-2 px-1 font-mono font-black text-gray-900 bg-gray-100/90">
+                                                    {avg ? (
+                                                        <span className="text-indigo-900">{avg}</span>
+                                                    ) : (
+                                                        <span className="text-gray-300">&ndash;</span>
+                                                    )}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 

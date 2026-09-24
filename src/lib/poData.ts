@@ -81,20 +81,20 @@ export const DEFAULT_PO_DEFINITIONS: PODefinition[] = [
         description: "Communicate effectively and inclusively within the engineering community and society at large, such as being able to comprehend and write effective reports and design documentation, make effective presentations considering cultural, language, and learning differences."
     },
     {
-        id: 10,
-        code: "PO10",
-        shortCode: "P10",
-        attribute: "Proj Mgt & Finance",
-        title: "Project Management and Finance",
-        description: "Apply knowledge and understanding of engineering management principles and economic decision-making and apply these to one’s own work, as a member and leader in a team, and to manage projects and in multidisciplinary environments."
-    },
-    {
         id: 11,
         code: "PO11",
         shortCode: "P11",
+        attribute: "Proj Mgt & Finance",
+        title: "Project Management and Finance",
+        description: "Demonstrate knowledge and understanding of the engineering and management principles and apply these to one's own work, as a member and leader in a team, to manage projects and in multidisciplinary environments."
+    },
+    {
+        id: 12,
+        code: "PO12",
+        shortCode: "P12",
         attribute: "Life Long Learning",
         title: "Life-Long Learning",
-        description: "Recognize the need for, and have the preparation and ability for i) independent and life-long learning ii) adaptability to new and emerging technologies and iii) critical thinking in the broadest context of technological change. (WK8) ."
+        description: "Recognize the need for, and have the preparation and ability to engage in independent and life-long learning in the broadest context of technological change."
     },
     {
         id: 13,
