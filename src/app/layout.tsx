@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "Course Outcome Marks Automation System",
 };
 
+import Footer from "@/components/Footer";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,6 +23,7 @@ export default function RootLayout({
         className={`${inter.variable} font-sans antialiased`}
       >
         {children}
+        <Footer />
       </body>
     </html>
   );
